@@ -1,0 +1,28 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
+.DS_Store
+
+# Native directories
+/ios/
+/android/
+
+# Environment variables
+.env*.local
+.env
+
+expo-env.d.ts
+
+# Agents & internal IDE tooling
+.agents/
+skills/
