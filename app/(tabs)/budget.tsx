@@ -38,7 +38,20 @@ export default function BudgetAnalyticsScreen() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
 
-  const availableMonths = ['2026-09', '2026-08', '2026-07', '2026-06'];
+  const availableMonths = useMemo(() => {
+    const months: string[] = [];
+    const date = new Date();
+    // Next month down to 5 months past
+    date.setMonth(date.getMonth() + 1);
+    for (let i = 0; i < 7; i++) {
+      months.push(date.toISOString().slice(0, 7));
+      date.setMonth(date.getMonth() - 1);
+    }
+    if (selectedMonth && !months.includes(selectedMonth)) {
+      months.unshift(selectedMonth);
+    }
+    return months;
+  }, [selectedMonth]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),

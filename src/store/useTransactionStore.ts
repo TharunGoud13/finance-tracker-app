@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Transaction, TransactionType } from '../types';
 import { StorageService, STORAGE_KEYS } from '../services/storageService';
-import { INITIAL_DEMO_TRANSACTIONS } from '../constants/demoData';
 
 interface TransactionFilterState {
   searchQuery: string;
@@ -25,7 +24,6 @@ interface TransactionState {
   clearLastDeletedTransaction: () => void;
   setFilters: (filters: Partial<TransactionFilterState>) => void;
   resetFilters: () => void;
-  seedDemoTransactions: () => Promise<void>;
   clearAllTransactions: () => Promise<void>;
 }
 
@@ -45,18 +43,11 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   loadTransactions: async () => {
     set({ isLoading: true });
     try {
-      let data = await StorageService.getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
-
-      // If brand new user with 0 transactions, seed with demo data
-      if (!data || data.length === 0) {
-        data = INITIAL_DEMO_TRANSACTIONS;
-        await StorageService.setItem(STORAGE_KEYS.TRANSACTIONS, INITIAL_DEMO_TRANSACTIONS);
-      }
-
-      set({ transactions: data, isLoading: false });
+      const data = await StorageService.getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
+      set({ transactions: data || [], isLoading: false });
     } catch (e) {
       console.error('[useTransactionStore] Error loading:', e);
-      set({ transactions: INITIAL_DEMO_TRANSACTIONS, isLoading: false });
+      set({ transactions: [], isLoading: false });
     }
   },
 
@@ -118,11 +109,6 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   resetFilters: () => {
     set({ filters: DEFAULT_FILTERS });
-  },
-
-  seedDemoTransactions: async () => {
-    set({ transactions: INITIAL_DEMO_TRANSACTIONS });
-    await StorageService.setItem(STORAGE_KEYS.TRANSACTIONS, INITIAL_DEMO_TRANSACTIONS);
   },
 
   clearAllTransactions: async () => {

@@ -9,13 +9,17 @@ import {
   Modal,
   TextInput,
   Share,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
+import { useGoalStore } from '../../src/store/useGoalStore';
 import { usePrivacyStore } from '../../src/store/usePrivacyStore';
+import { UpdateService } from '../../src/services/updateService';
 import { CurrencyCode } from '../../src/types';
 import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
@@ -35,13 +39,12 @@ export default function SettingsScreen() {
   const setUserName = useSettingsStore((state) => state.setUserName);
 
   const transactions = useTransactionStore((state) => state.transactions);
-  const seedDemoTransactions = useTransactionStore((state) => state.seedDemoTransactions);
   const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
 
   const categories = useBudgetStore((state) => state.categories);
   const budgets = useBudgetStore((state) => state.budgets);
-  const seedDemoBudgets = useBudgetStore((state) => state.seedDemoBudgets);
   const clearAllBudgets = useBudgetStore((state) => state.clearAllBudgets);
+  const clearAllGoals = useGoalStore((state) => state.clearAllGoals);
 
   const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
   const toggleSensitiveData = usePrivacyStore((state) => state.toggleSensitiveData);
@@ -53,13 +56,88 @@ export default function SettingsScreen() {
   const [isClearModalVisible, setIsClearModalVisible] = useState(false);
   const [statusBanner, setStatusBanner] = useState('');
 
-  const handleRestoreDemoData = async () => {
+  // Updates state
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isDownloadingUpdate, setIsDownloadingUpdate] = useState(false);
+  const [updateSubtitle, setUpdateSubtitle] = useState('EAS OTA Channel: production • Tap to check');
+  const updateMetadata = UpdateService.getMetadata();
+
+  const handleCheckUpdates = async () => {
     triggerHaptic.medium();
-    await seedDemoTransactions();
-    await seedDemoBudgets();
-    triggerHaptic.success();
-    setStatusBanner('OnePlus Demo data restored successfully!');
-    setTimeout(() => setStatusBanner(''), 3500);
+    setIsCheckingUpdate(true);
+    setUpdateSubtitle('Connecting to EAS Update servers...');
+
+    try {
+      const checkResult = await UpdateService.checkForUpdate();
+
+      if (checkResult.isDevelopment) {
+        setIsCheckingUpdate(false);
+        setUpdateSubtitle('EAS Updates active in APK/release builds');
+        Alert.alert(
+          'Development Mode',
+          'EAS OTA Updates run on standalone production APK builds. In local development, updates are served instantly by Metro.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      if (checkResult.error) {
+        setIsCheckingUpdate(false);
+        setUpdateSubtitle('Update check failed');
+        Alert.alert(
+          'Update Check Failed',
+          checkResult.error || 'Could not connect to update servers. Check your internet connection.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      if (checkResult.isAvailable) {
+        setIsCheckingUpdate(false);
+        setIsDownloadingUpdate(true);
+        setUpdateSubtitle('Downloading update bundle...');
+        triggerHaptic.success();
+
+        Alert.alert(
+          'Update Available!',
+          'A new update is available. Downloading and applying it now...',
+          [
+            {
+              text: 'Apply & Restart',
+              onPress: async () => {
+                const downloadResult = await UpdateService.fetchAndApplyUpdate();
+                if (!downloadResult.success) {
+                  setIsDownloadingUpdate(false);
+                  setUpdateSubtitle('Failed to install update');
+                  Alert.alert('Update Error', downloadResult.error || 'Could not apply update.');
+                }
+              },
+            },
+          ]
+        );
+
+        const downloadResult = await UpdateService.fetchAndApplyUpdate();
+        if (!downloadResult.success) {
+          setIsDownloadingUpdate(false);
+          setUpdateSubtitle('Failed to install update');
+          Alert.alert('Update Error', downloadResult.error || 'Could not apply update.');
+        }
+      } else {
+        setIsCheckingUpdate(false);
+        setUpdateSubtitle('App is up to date (Latest bundle)');
+        triggerHaptic.success();
+        setStatusBanner('You are running the latest version of OneFinance.');
+        setTimeout(() => setStatusBanner(''), 3500);
+        Alert.alert('No Updates Available', 'OneFinance is already running the latest version.', [
+          { text: 'OK' },
+        ]);
+      }
+    } catch (e: any) {
+      setIsCheckingUpdate(false);
+      setIsDownloadingUpdate(false);
+      setUpdateSubtitle('Error checking updates');
+      Alert.alert('Error', e?.message || 'An unexpected error occurred while checking for updates.');
+    }
   };
 
   const handleClearData = async () => {
@@ -67,6 +145,7 @@ export default function SettingsScreen() {
     triggerHaptic.heavy();
     await clearAllTransactions();
     await clearAllBudgets();
+    await clearAllGoals();
     triggerHaptic.warning();
     setStatusBanner('All data has been cleared from local storage.');
     setTimeout(() => setStatusBanner(''), 3500);
@@ -237,22 +316,6 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>DATA MANAGEMENT</Text>
           <View style={styles.card}>
-            {/* Seed Demo Data */}
-            <Pressable style={styles.rowItem} onPress={handleRestoreDemoData}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
-                  <Icon name="Database" size={18} color={THEME.colors.primary} />
-                </View>
-                <View>
-                  <Text style={styles.rowTitle}>Load Demo Data</Text>
-                  <Text style={styles.rowSubtitle}>Populate sample expenses & budgets</Text>
-                </View>
-              </View>
-              <Icon name="Download" size={18} color={THEME.colors.primary} />
-            </Pressable>
-
-            <View style={styles.divider} />
-
             {/* Export Data */}
             <Pressable style={styles.rowItem} onPress={handleExportData}>
               <View style={styles.rowLeft}>
@@ -285,11 +348,67 @@ export default function SettingsScreen() {
                   <Text style={[styles.rowTitle, { color: THEME.colors.expense }]}>
                     Clear Local Storage
                   </Text>
-                  <Text style={styles.rowSubtitle}>Delete all saved records</Text>
+                  <Text style={styles.rowSubtitle}>Delete all saved records (start fresh)</Text>
                 </View>
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
             </Pressable>
+          </View>
+        </View>
+
+        {/* Section: System & EAS Updates */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>SYSTEM & UPDATES</Text>
+          <View style={styles.card}>
+            {/* Check for Updates */}
+            <Pressable
+              style={styles.rowItem}
+              disabled={isCheckingUpdate || isDownloadingUpdate}
+              onPress={handleCheckUpdates}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
+                  {isCheckingUpdate || isDownloadingUpdate ? (
+                    <ActivityIndicator size="small" color={THEME.colors.primary} />
+                  ) : (
+                    <Icon name="CloudDownload" size={18} color={THEME.colors.primary} />
+                  )}
+                </View>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle}>Check for Updates</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={2}>
+                    {updateSubtitle}
+                  </Text>
+                </View>
+              </View>
+              {isCheckingUpdate || isDownloadingUpdate ? (
+                <Text style={styles.updatingText}>
+                  {isDownloadingUpdate ? 'Downloading...' : 'Checking...'}
+                </Text>
+              ) : (
+                <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+              )}
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            {/* Version & Channel Info */}
+            <View style={styles.rowItem}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
+                  <Icon name="Info" size={18} color={THEME.colors.textPrimary} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>App Version</Text>
+                  <Text style={styles.rowSubtitle}>
+                    v1.0.0 • EAS Channel: {updateMetadata.channel}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.versionBadge}>
+                <Text style={styles.versionBadgeText}>Production</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -782,6 +901,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 18,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  updatingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.primary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  versionBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  versionBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.colors.textSecondary,
     fontFamily: THEME.typography.fontFamily,
   },
 });

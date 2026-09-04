@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { RecurringTransaction } from '../types';
 import { StorageService, STORAGE_KEYS } from '../services/storageService';
-import { INITIAL_DEMO_RECURRING } from '../constants/demoData';
 
 interface RecurringState {
   recurring: RecurringTransaction[];
@@ -12,7 +11,6 @@ interface RecurringState {
   updateRecurring: (id: string, update: Partial<RecurringTransaction>) => Promise<void>;
   deleteRecurring: (id: string) => Promise<void>;
   toggleRecurringActive: (id: string) => Promise<void>;
-  seedDemoRecurring: () => Promise<void>;
 }
 
 export const useRecurringStore = create<RecurringState>((set, get) => ({
@@ -22,20 +20,14 @@ export const useRecurringStore = create<RecurringState>((set, get) => ({
   loadRecurring: async () => {
     set({ isLoading: true });
     try {
-      const hasClearedDemo = await StorageService.getItem<boolean>('@onefinance_demo_recurring_cleared_v2', false);
-      let stored = await StorageService.getItem<RecurringTransaction[]>(
+      const stored = await StorageService.getItem<RecurringTransaction[]>(
         STORAGE_KEYS.RECURRING,
         []
       );
-      if (!hasClearedDemo) {
-        stored = [];
-        await StorageService.setItem(STORAGE_KEYS.RECURRING, []);
-        await StorageService.setItem('@onefinance_demo_recurring_cleared_v2', true);
-      }
-      set({ recurring: stored, isLoading: false });
+      set({ recurring: stored || [], isLoading: false });
     } catch (e) {
       console.error('[useRecurringStore] Error loading:', e);
-      set({ isLoading: false });
+      set({ recurring: [], isLoading: false });
     }
   },
 
@@ -71,10 +63,5 @@ export const useRecurringStore = create<RecurringState>((set, get) => ({
     );
     set({ recurring: updated });
     await StorageService.setItem(STORAGE_KEYS.RECURRING, updated);
-  },
-
-  seedDemoRecurring: async () => {
-    set({ recurring: INITIAL_DEMO_RECURRING });
-    await StorageService.setItem(STORAGE_KEYS.RECURRING, INITIAL_DEMO_RECURRING);
   },
 }));

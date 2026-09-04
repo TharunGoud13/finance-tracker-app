@@ -1,67 +1,76 @@
 import * as Updates from 'expo-updates';
 
-export interface UpdateStatusResult {
-  status: 'updated' | 'no_update' | 'dev_mode' | 'error';
-  message: string;
+export interface UpdateCheckResult {
+  isAvailable: boolean;
+  isDevelopment: boolean;
+  message?: string;
+  error?: string;
 }
 
 export const UpdateService = {
   /**
-   * True if running in a standalone build with expo-updates enabled
+   * Returns current update metadata for display in Settings
    */
-  isEnabled(): boolean {
-    return Updates.isEnabled && !__DEV__;
-  },
-
-  /**
-   * Details about the currently running update bundle
-   */
-  getUpdateInfo() {
+  getMetadata() {
     return {
-      updateId: Updates.updateId,
-      channel: Updates.channel || 'default',
-      runtimeVersion: Updates.runtimeVersion,
+      isEnabled: Updates.isEnabled,
+      channel: Updates.channel || 'production',
+      runtimeVersion: typeof Updates.runtimeVersion === 'string' ? Updates.runtimeVersion : '1.0.0',
+      updateId: Updates.updateId || null,
       isEmbeddedLaunch: Updates.isEmbeddedLaunch,
-      createdAt: Updates.createdAt ? Updates.createdAt.toLocaleDateString() : null,
+      createdAt: Updates.createdAt ? new Date(Updates.createdAt).toLocaleString() : null,
     };
   },
 
   /**
-   * Manually check for an update and apply it immediately
+   * Checks EAS Update servers for a new published bundle
    */
-  async checkForAndApplyUpdate(): Promise<UpdateStatusResult> {
+  async checkForUpdate(): Promise<UpdateCheckResult> {
+    // In Expo Go or standard dev client, Updates are not enabled
     if (__DEV__ || !Updates.isEnabled) {
       return {
-        status: 'dev_mode',
-        message:
-          'Over-the-air updates work on production and preview builds. In local development, Metro reloads your code live.',
+        isAvailable: false,
+        isDevelopment: true,
+        message: 'Updates are disabled in development mode. EAS Updates run automatically on production and preview APK builds.',
       };
     }
 
     try {
-      const check = await Updates.checkForUpdateAsync();
-      if (!check.isAvailable) {
-        return {
-          status: 'no_update',
-          message: 'Your app is up to date with the latest release.',
-        };
-      }
-
-      // Download the new update bundle
-      await Updates.fetchUpdateAsync();
-
-      // Instantly reload into the new version
-      await Updates.reloadAsync();
-
+      const update = await Updates.checkForUpdateAsync();
       return {
-        status: 'updated',
-        message: 'Update downloaded and applied successfully!',
+        isAvailable: update.isAvailable,
+        isDevelopment: false,
+        message: update.isAvailable
+          ? 'A new version of OneFinance is available.'
+          : 'You are on the latest version of OneFinance.',
       };
-    } catch (error: any) {
-      console.error('[UpdateService] Update check failed:', error);
+    } catch (e: any) {
+      console.warn('[UpdateService] Check failed:', e);
       return {
-        status: 'error',
-        message: error?.message || 'Could not check for updates. Please try again.',
+        isAvailable: false,
+        isDevelopment: false,
+        error: e?.message || 'Unable to reach update servers. Please check your internet connection.',
+      };
+    }
+  },
+
+  /**
+   * Fetches the update bundle and immediately reloads the application
+   */
+  async fetchAndApplyUpdate(): Promise<{ success: boolean; error?: string }> {
+    if (!Updates.isEnabled) {
+      return { success: false, error: 'Updates are not enabled in this build environment.' };
+    }
+
+    try {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+      return { success: true };
+    } catch (e: any) {
+      console.error('[UpdateService] Download failed:', e);
+      return {
+        success: false,
+        error: e?.message || 'Failed to download or apply the update.',
       };
     }
   },

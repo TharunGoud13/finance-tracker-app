@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Budget, Category } from '../types';
 import { StorageService, STORAGE_KEYS } from '../services/storageService';
 import { ALL_DEFAULT_CATEGORIES } from '../constants/categories';
-import { INITIAL_DEMO_BUDGETS } from '../constants/demoData';
 import { getPreviousMonth } from '../utils/calculations';
 
 interface BudgetState {
@@ -24,16 +23,15 @@ interface BudgetState {
   updateCategory: (id: string, categoryUpdate: Partial<Category>) => Promise<void>;
   deleteCategory: (id: string) => Promise<{ success: boolean; message?: string }>;
   
-  seedDemoBudgets: () => Promise<void>;
   clearAllBudgets: () => Promise<void>;
 }
 
-const DEFAULT_CURRENT_MONTH = '2026-09';
+const getCurrentMonthString = (): string => new Date().toISOString().slice(0, 7);
 
 export const useBudgetStore = create<BudgetState>((set, get) => ({
   budgets: [],
   categories: ALL_DEFAULT_CATEGORIES,
-  selectedMonth: DEFAULT_CURRENT_MONTH,
+  selectedMonth: getCurrentMonthString(),
   isLoading: true,
 
   loadBudgetsAndCategories: async () => {
@@ -51,18 +49,14 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
         await StorageService.setItem(STORAGE_KEYS.CATEGORIES, storedCategories);
       }
 
-      let storedBudgets = await StorageService.getItem<Budget[]>(
+      const storedBudgets = await StorageService.getItem<Budget[]>(
         STORAGE_KEYS.BUDGETS,
         []
       );
-      if (!storedBudgets || storedBudgets.length === 0) {
-        storedBudgets = INITIAL_DEMO_BUDGETS;
-        await StorageService.setItem(STORAGE_KEYS.BUDGETS, INITIAL_DEMO_BUDGETS);
-      }
 
       set({
         categories: storedCategories,
-        budgets: storedBudgets,
+        budgets: storedBudgets || [],
         isLoading: false,
       });
     } catch (e) {
@@ -179,12 +173,6 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
     await StorageService.setItem(STORAGE_KEYS.CATEGORIES, updatedCats);
     await StorageService.setItem(STORAGE_KEYS.BUDGETS, updatedBudgets);
     return { success: true };
-  },
-
-  seedDemoBudgets: async () => {
-    set({ budgets: INITIAL_DEMO_BUDGETS, categories: ALL_DEFAULT_CATEGORIES });
-    await StorageService.setItem(STORAGE_KEYS.BUDGETS, INITIAL_DEMO_BUDGETS);
-    await StorageService.setItem(STORAGE_KEYS.CATEGORIES, ALL_DEFAULT_CATEGORIES);
   },
 
   clearAllBudgets: async () => {

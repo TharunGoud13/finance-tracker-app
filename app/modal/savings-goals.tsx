@@ -63,7 +63,11 @@ export default function SavingsGoalsModal() {
   const [newTitle, setNewTitle] = useState('');
   const [newTargetInput, setNewTargetInput] = useState('');
   const [newCurrentInput, setNewCurrentInput] = useState('');
-  const [newTargetDate, setNewTargetDate] = useState('2026-12-31');
+  const [newTargetDate, setNewTargetDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d.toISOString().slice(0, 10);
+  });
 
   const handleCreateGoal = async () => {
     if (!newTitle.trim()) {

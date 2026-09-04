@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { SavingsGoal } from '../types';
 import { StorageService, STORAGE_KEYS } from '../services/storageService';
-import { INITIAL_DEMO_SAVINGS_GOALS } from '../constants/demoData';
 
 interface GoalState {
   goals: SavingsGoal[];
@@ -13,7 +12,6 @@ interface GoalState {
   deleteGoal: (id: string) => Promise<void>;
   addFundsToGoal: (id: string, amountPaise: number) => Promise<void>;
   withdrawFundsFromGoal: (id: string, amountPaise: number) => Promise<void>;
-  seedDemoGoals: () => Promise<void>;
   clearAllGoals: () => Promise<void>;
 }
 
@@ -24,20 +22,14 @@ export const useGoalStore = create<GoalState>((set, get) => ({
   loadGoals: async () => {
     set({ isLoading: true });
     try {
-      const hasClearedDemo = await StorageService.getItem<boolean>('@onefinance_demo_goals_cleared_v2', false);
-      let storedGoals = await StorageService.getItem<SavingsGoal[]>(
+      const storedGoals = await StorageService.getItem<SavingsGoal[]>(
         STORAGE_KEYS.SAVINGS_GOALS,
         []
       );
-      if (!hasClearedDemo) {
-        storedGoals = [];
-        await StorageService.setItem(STORAGE_KEYS.SAVINGS_GOALS, []);
-        await StorageService.setItem('@onefinance_demo_goals_cleared_v2', true);
-      }
-      set({ goals: storedGoals, isLoading: false });
+      set({ goals: storedGoals || [], isLoading: false });
     } catch (e) {
       console.error('[useGoalStore] Error loading goals:', e);
-      set({ isLoading: false });
+      set({ goals: [], isLoading: false });
     }
   },
 
@@ -95,11 +87,6 @@ export const useGoalStore = create<GoalState>((set, get) => ({
     );
     set({ goals: updated });
     await StorageService.setItem(STORAGE_KEYS.SAVINGS_GOALS, updated);
-  },
-
-  seedDemoGoals: async () => {
-    set({ goals: INITIAL_DEMO_SAVINGS_GOALS });
-    await StorageService.setItem(STORAGE_KEYS.SAVINGS_GOALS, INITIAL_DEMO_SAVINGS_GOALS);
   },
 
   clearAllGoals: async () => {
