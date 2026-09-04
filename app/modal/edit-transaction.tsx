@@ -97,18 +97,20 @@ export default function EditTransactionModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#090D16',
   },
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#090D16',
   },
   deleteHeaderBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(235, 0, 40, 0.15)',
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.25)',
   },
 });

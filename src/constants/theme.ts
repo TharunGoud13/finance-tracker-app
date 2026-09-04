@@ -1,65 +1,71 @@
+import { Platform } from 'react-native';
+
 export const THEME = {
   colors: {
-    // Primary: OnePlus Signature Red
-    primary: '#eb0028',
-    primaryDark: '#c00021',
-    primaryLight: '#ff2d55',
-    primaryGlow: 'rgba(235, 0, 40, 0.20)',
+    // Signature OnePlus Black & Dark theme palette
+    background: '#000000',
+    backgroundElevated: '#0C0C0F',
+    surface: '#121216',
+    surfaceSubtle: '#1A1A20',
+    surfaceHover: '#22222A',
+    border: 'rgba(255, 255, 255, 0.10)',
+    borderStrong: 'rgba(255, 255, 255, 0.20)',
 
-    // Apple Dark OLED Palette
-    dark: {
-      background: '#000000', // Pure OLED Black
-      groupedBackground: '#09090b', // Apple System Grouped Background
-      cardBackground: '#121216', // Apple Secondary Grouped Background
-      elevatedCard: '#1c1c22', // Apple Tertiary Grouped Background
-      inputBackground: '#1c1c22',
-      border: 'rgba(255, 255, 255, 0.08)',
-      borderStrong: 'rgba(255, 255, 255, 0.15)',
-      separator: 'rgba(255, 255, 255, 0.08)',
-      textPrimary: '#ffffff',
-      textSecondary: 'rgba(235, 235, 245, 0.65)',
-      textTertiary: 'rgba(235, 235, 245, 0.35)',
-      textDisabled: '#48484a',
-      tabBar: 'rgba(18, 18, 22, 0.85)',
-    },
+    // Signature OnePlus Red & Accents
+    primary: '#EB0028', // OnePlus Never Settle Red
+    primaryLight: '#FF2D55',
+    primaryDark: '#C00021',
+    primaryGlow: 'rgba(235, 0, 40, 0.30)',
 
-    // Financial Semantics
-    income: '#30d158', // Apple / Modern Emerald Green
-    incomeBg: 'rgba(48, 209, 88, 0.12)',
-    expense: '#eb0028', // OnePlus Red
-    expenseBg: 'rgba(235, 0, 40, 0.12)',
-    savings: '#0a84ff', // iOS Blue
-    savingsBg: 'rgba(10, 132, 255, 0.12)',
+    // Financial Indicators
+    income: '#30D158', // Vibrant Crisp Green
+    incomeBg: 'rgba(48, 209, 88, 0.14)',
+    incomeBorder: 'rgba(48, 209, 88, 0.30)',
 
-    // Health States
-    healthy: '#30d158',
-    healthyBg: 'rgba(48, 209, 88, 0.12)',
-    moderate: '#0a84ff',
-    moderateBg: 'rgba(10, 132, 255, 0.12)',
-    warning: '#ff9f0a',
-    warningBg: 'rgba(255, 159, 10, 0.12)',
-    exceeded: '#eb0028',
-    exceededBg: 'rgba(235, 0, 40, 0.12)',
+    expense: '#EB0028', // OnePlus Red
+    expenseBg: 'rgba(235, 0, 40, 0.14)',
+    expenseBorder: 'rgba(235, 0, 40, 0.30)',
+
+    savings: '#EB0028',
+    savingsBg: 'rgba(235, 0, 40, 0.14)',
+
+    warning: '#FF9F0A',
+    warningBg: 'rgba(255, 159, 10, 0.14)',
+
+    // Typography
+    textPrimary: '#FFFFFF',
+    textSecondary: 'rgba(235, 235, 245, 0.70)',
+    textMuted: 'rgba(235, 235, 245, 0.45)',
+    textDisabled: 'rgba(235, 235, 245, 0.25)',
   },
-
-  radius: {
-    xs: 6,
-    sm: 10,
-    md: 14,
-    lg: 18,
-    xl: 22,
-    '2xl': 28,
-    full: 9999,
+  typography: {
+    fontFamily: Platform.select({
+      ios: 'OnePlus Sans, -apple-system, BlinkMacSystemFont',
+      android: 'OnePlus Sans, Roboto, sans-serif',
+      default: 'OnePlus Sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }),
   },
-
-  spacing: {
-    xs: 4,
+  borderRadius: {
     sm: 8,
     md: 12,
     lg: 16,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 32,
-    '4xl': 40,
+    xl: 22,
+    full: 9999,
+  },
+  shadows: {
+    card: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.45,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    floating: {
+      shadowColor: '#EB0028',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.45,
+      shadowRadius: 14,
+      elevation: 9,
+    },
   },
 };

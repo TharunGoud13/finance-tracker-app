@@ -5,18 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Category, TransactionType, Transaction } from '../../types';
-import { SegmentedControl } from '../ui/SegmentedControl';
-import { Button } from '../ui/Button';
-import { Switch } from '../ui/Switch';
+import { THEME } from '../../constants/theme';
 import { Icon } from '../ui/Icon';
-import { HapticPressable } from '../ui/HapticPressable';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { SUPPORTED_CURRENCIES } from '../../constants/currencies';
 import { parseInputToPaise, paiseToInputString } from '../../utils/formatters';
+import { triggerHaptic } from '../../utils/haptics';
 
 interface TransactionFormProps {
   initialData?: Partial<Transaction>;
@@ -51,11 +50,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [categoryId, setCategoryId] = useState<string>(
     initialData?.categoryId ||
       categories.find((c) => c.type === (initialData?.type || 'expense'))?.id ||
+      categories[0]?.id ||
       ''
   );
   const [description, setDescription] = useState(initialData?.description || '');
   const [notes, setNotes] = useState(initialData?.notes || '');
-  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -68,9 +67,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const filteredCategories = categories.filter((c) => c.type === type);
 
   const handleTypeChange = (newType: TransactionType) => {
+    triggerHaptic.selection();
     setType(newType);
     const firstCat = categories.find((c) => c.type === newType);
     if (firstCat) setCategoryId(firstCat.id);
+  };
+
+  const handleQuickAddAmount = (addValue: number) => {
+    triggerHaptic.light();
+    const current = parseFloat(amountInput) || 0;
+    const next = current + addValue;
+    setAmountInput(next.toString());
   };
 
   const handleFormSubmit = async () => {
@@ -79,28 +86,35 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
     if (paise <= 0) {
       setErrorMsg('Please enter a valid amount greater than 0');
+      triggerHaptic.error();
       return;
     }
 
     if (!categoryId) {
       setErrorMsg('Please select a category');
+      triggerHaptic.error();
       return;
     }
+
+    const currentCat = categories.find((c) => c.id === categoryId);
+    const finalDesc = description.trim() || currentCat?.name || 'Transaction';
 
     try {
       await onSubmit({
         amount: paise,
         categoryId,
         type,
-        date,
-        description: description.trim() || categories.find((c) => c.id === categoryId)?.name || 'Transaction',
+        date: `${date}T12:00:00.000Z`,
+        description: finalDesc,
         notes: notes.trim(),
-        isRecurring,
+        isRecurring: false,
       });
     } catch (e: any) {
       setErrorMsg(e?.message || 'Failed to save transaction');
     }
   };
+
+  const quickChips = currency === 'INR' ? [100, 500, 1000, 2000] : [10, 25, 50, 100];
 
   return (
     <KeyboardAvoidingView
@@ -113,188 +127,243 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.segmentWrapper}>
-          <SegmentedControl
-            options={[
-              { value: 'expense', label: 'Expense', icon: 'ArrowUpRight', activeColor: '#eb0028' },
-              { value: 'income', label: 'Income', icon: 'ArrowDownLeft', activeColor: '#30d158' },
-            ]}
-            selectedValue={type}
-            onSelect={handleTypeChange}
-            size="md"
-          />
-        </View>
-
-        {/* Large Amount Input Area */}
-        <View style={styles.amountArea}>
-          <Text
+        {/* Type Switcher (Expense / Income) */}
+        <View style={styles.segmentedControl}>
+          <Pressable
             style={[
-              styles.currencyPrefix,
-              { color: type === 'income' ? '#30d158' : '#eb0028' },
+              styles.segmentItem,
+              type === 'expense' && styles.segmentActiveExpense,
             ]}
+            onPress={() => handleTypeChange('expense')}
           >
-            {currencySymbol}
-          </Text>
-          <TextInput
-            value={amountInput}
-            onChangeText={(val) => {
-              setAmountInput(val);
-              if (errorMsg) setErrorMsg('');
-            }}
-            placeholder="0"
-            placeholderTextColor="rgba(235, 235, 245, 0.25)"
-            keyboardType="numeric"
-            style={styles.amountInput}
-            autoFocus={!initialData}
-          />
+            <Icon
+              name="ArrowUpRight"
+              size={18}
+              color={type === 'expense' ? '#FFFFFF' : THEME.colors.textMuted}
+              strokeWidth={2.5}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                type === 'expense' && styles.segmentTextActive,
+              ]}
+            >
+              Expense
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.segmentItem,
+              type === 'income' && styles.segmentActiveIncome,
+            ]}
+            onPress={() => handleTypeChange('income')}
+          >
+            <Icon
+              name="ArrowDownLeft"
+              size={18}
+              color={type === 'income' ? '#FFFFFF' : THEME.colors.textMuted}
+              strokeWidth={2.5}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                type === 'income' && styles.segmentTextActive,
+              ]}
+            >
+              Income
+            </Text>
+          </Pressable>
         </View>
 
-        {errorMsg.length > 0 && (
+        {/* Hero Amount Input Card */}
+        <View style={styles.amountCard}>
+          <Text style={styles.amountLabel}>ENTER AMOUNT</Text>
+          <View style={styles.amountInputRow}>
+            <Text
+              style={[
+                styles.currencyPrefix,
+                type === 'expense' ? styles.expenseColor : styles.incomeColor,
+              ]}
+            >
+              {currencySymbol}
+            </Text>
+            <TextInput
+              style={[
+                styles.amountTextInput,
+                type === 'expense' ? styles.expenseColor : styles.incomeColor,
+              ]}
+              placeholder="0"
+              placeholderTextColor={THEME.colors.textDisabled}
+              keyboardType="decimal-pad"
+              value={amountInput}
+              onChangeText={setAmountInput}
+              autoFocus={!initialData}
+            />
+          </View>
+
+          {/* Quick Increment Chips */}
+          <View style={styles.chipsRow}>
+            {quickChips.map((val) => (
+              <Pressable
+                key={val}
+                style={styles.chipButton}
+                onPress={() => handleQuickAddAmount(val)}
+              >
+                <Text style={styles.chipText}>+{val}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Error Message */}
+        {errorMsg ? (
           <View style={styles.errorBanner}>
-            <Icon name="AlertCircle" size={16} color="#eb0028" style={{ marginRight: 6 }} />
+            <Icon name="AlertCircle" size={16} color={THEME.colors.expense} />
             <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
-        )}
+        ) : null}
 
-        {/* Inset Group: Details */}
-        <Text style={styles.sectionTitle}>TRANSACTION DETAILS</Text>
-        <View style={styles.insetGroup}>
-          <View style={styles.insetRow}>
-            <Text style={styles.insetRowLabel}>Title</Text>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="e.g. Starbucks, Salary"
-              placeholderTextColor="rgba(235, 235, 245, 0.35)"
-              style={styles.insetTextInput}
-            />
-          </View>
-          <View style={styles.separator} />
-          
-          <View style={styles.insetRow}>
-            <Text style={styles.insetRowLabel}>Date</Text>
-            <View style={styles.dateChipsRow}>
-              <HapticPressable
-                onPress={() => setDate(todayStr)}
-                hapticType="selection"
-                style={[styles.dateChip, date === todayStr && styles.dateChipActive]}
-              >
-                <Text style={[styles.dateChipText, date === todayStr && styles.dateChipTextActive]}>Today</Text>
-              </HapticPressable>
-              <HapticPressable
-                onPress={() => setDate(yesterdayStr)}
-                hapticType="selection"
-                style={[styles.dateChip, date === yesterdayStr && styles.dateChipActive]}
-              >
-                <Text style={[styles.dateChipText, date === yesterdayStr && styles.dateChipTextActive]}>Yesterday</Text>
-              </HapticPressable>
-            </View>
-          </View>
-          <View style={styles.separator} />
-
-          <View style={styles.insetRow}>
-            <Text style={styles.insetRowLabel}>Custom Date</Text>
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="rgba(235, 235, 245, 0.35)"
-              style={styles.insetTextInput}
-            />
-          </View>
-        </View>
-
-        {/* Category Picker Grid */}
-        <Text style={styles.sectionTitle}>CATEGORY</Text>
-        <View style={styles.categoryGrid}>
-          {filteredCategories.map((cat) => {
-            const isSelected = cat.id === categoryId;
-            return (
-              <View key={cat.id} style={styles.categoryCol}>
-                <HapticPressable
-                  onPress={() => setCategoryId(cat.id)}
-                  hapticType="selection"
+        {/* Category Grid */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionLabel}>SELECT CATEGORY</Text>
+          <View style={styles.categoryGrid}>
+            {filteredCategories.map((cat) => {
+              const isSelected = cat.id === categoryId;
+              return (
+                <Pressable
+                  key={cat.id}
                   style={[
-                    styles.categoryTile,
+                    styles.categoryCard,
                     isSelected && {
-                      backgroundColor: `${cat.color}18`,
-                      borderColor: cat.color,
+                      borderColor: THEME.colors.primary,
+                      backgroundColor: `${THEME.colors.primary}25`,
                     },
                   ]}
+                  onPress={() => {
+                    triggerHaptic.selection();
+                    setCategoryId(cat.id);
+                  }}
                 >
                   <View
                     style={[
-                      styles.categoryIconCircle,
-                      { backgroundColor: isSelected ? cat.color : `${cat.color}22` },
+                      styles.catIconWrap,
+                      { backgroundColor: `${cat.color || '#EB0028'}22` },
+                      isSelected && { backgroundColor: THEME.colors.primary },
                     ]}
                   >
                     <Icon
                       name={cat.icon || 'Tag'}
                       size={20}
-                      color={isSelected ? '#ffffff' : cat.color}
+                      color={isSelected ? '#FFFFFF' : cat.color || THEME.colors.primary}
                     />
                   </View>
                   <Text
                     style={[
-                      styles.categoryName,
-                      isSelected && { color: '#ffffff', fontWeight: '700' },
+                      styles.categoryCardText,
+                      isSelected && { color: '#FFFFFF', fontWeight: '800' },
                     ]}
-                    numberOfLines={2}
+                    numberOfLines={1}
                   >
                     {cat.name}
                   </Text>
-                  {isSelected && (
-                    <View style={[styles.selectedBadge, { backgroundColor: cat.color }]}>
-                      <Icon name="Check" size={10} color="#ffffff" strokeWidth={3} />
-                    </View>
-                  )}
-                </HapticPressable>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Options */}
-        <Text style={styles.sectionTitle}>OPTIONS</Text>
-        <View style={styles.insetGroup}>
-          <View style={styles.insetRow}>
-            <Text style={styles.insetRowLabel}>Recurring Monthly</Text>
-            <Switch
-              value={isRecurring}
-              onValueChange={setIsRecurring}
-              activeColor={type === 'income' ? '#30d158' : '#eb0028'}
-            />
-          </View>
-          <View style={styles.separator} />
-          <View style={[styles.insetRow, { alignItems: 'flex-start', paddingVertical: 12 }]}>
-            <Text style={[styles.insetRowLabel, { paddingTop: 6 }]}>Notes</Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Add extra context..."
-              placeholderTextColor="rgba(235, 235, 245, 0.35)"
-              multiline
-              numberOfLines={2}
-              style={[styles.insetTextInput, { height: 48, textAlignVertical: 'top' }]}
-            />
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionsRow}>
-          <Button
-            title="Cancel"
-            variant="secondary"
-            onPress={onCancel}
-            style={{ flex: 1 }}
-          />
-          <Button
-            title={initialData ? 'Update Record' : 'Save'}
-            variant="primary"
+        {/* Description & Note Input */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionLabel}>DETAILS & NOTE</Text>
+          <View style={styles.inputCard}>
+            <View style={styles.fieldRow}>
+              <Icon name="FileText" size={18} color={THEME.colors.textMuted} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Description / Merchant (e.g. Starbucks)"
+                placeholderTextColor={THEME.colors.textMuted}
+                value={description}
+                onChangeText={setDescription}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.fieldRow}>
+              <Icon name="MessageSquare" size={18} color={THEME.colors.textMuted} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Additional notes (optional)"
+                placeholderTextColor={THEME.colors.textMuted}
+                value={notes}
+                onChangeText={setNotes}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Date Selector */}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionLabel}>TRANSACTION DATE</Text>
+          <View style={styles.dateSelectorRow}>
+            <Pressable
+              style={[styles.dateChip, date === todayStr && styles.dateChipActive]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setDate(todayStr);
+              }}
+            >
+              <Text style={[styles.dateChipText, date === todayStr && styles.dateChipTextActive]}>
+                Today
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.dateChip, date === yesterdayStr && styles.dateChipActive]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setDate(yesterdayStr);
+              }}
+            >
+              <Text
+                style={[
+                  styles.dateChipText,
+                  date === yesterdayStr && styles.dateChipTextActive,
+                ]}
+              >
+                Yesterday
+              </Text>
+            </Pressable>
+
+            <View style={styles.dateCustomInputWrap}>
+              <Icon name="Calendar" size={14} color={THEME.colors.textMuted} />
+              <TextInput
+                style={styles.dateCustomInput}
+                value={date}
+                onChangeText={setDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={THEME.colors.textMuted}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Actions Button */}
+        <View style={styles.buttonGroup}>
+          <Pressable
+            style={[
+              styles.submitButton,
+              type === 'expense' ? styles.submitExpense : styles.submitIncome,
+              isSubmitting && { opacity: 0.6 },
+            ]}
             onPress={handleFormSubmit}
-            loading={isSubmitting}
-            style={{ flex: 2 }}
-          />
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Saving...' : initialData ? 'Update Transaction' : 'Save Transaction'}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -304,162 +373,255 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: THEME.colors.background,
   },
   contentContainer: {
-    padding: 20,
+    padding: 16,
     paddingBottom: 40,
   },
-  segmentWrapper: {
-    marginBottom: 28,
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: THEME.colors.surfaceSubtle,
+    borderRadius: THEME.borderRadius.lg,
+    padding: 4,
+    marginBottom: 16,
   },
-  amountArea: {
+  segmentItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 28,
+    paddingVertical: 10,
+    borderRadius: THEME.borderRadius.md,
+    gap: 8,
+  },
+  segmentActiveExpense: {
+    backgroundColor: THEME.colors.expense,
+  },
+  segmentActiveIncome: {
+    backgroundColor: THEME.colors.income,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.textMuted,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  segmentTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  amountCard: {
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.xl,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    marginBottom: 16,
+    ...THEME.shadows.card,
+  },
+  amountLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: THEME.colors.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  amountInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   currencyPrefix: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: '800',
     marginRight: 6,
+    fontFamily: THEME.typography.fontFamily,
   },
-  amountInput: {
-    fontSize: 64,
-    fontWeight: '800',
-    color: '#ffffff',
+  amountTextInput: {
+    fontSize: 44,
+    fontWeight: '900',
     minWidth: 120,
-    textAlign: 'center',
-    letterSpacing: -2,
+    textAlign: 'left',
+    padding: 0,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  expenseColor: {
+    color: THEME.colors.expense,
+  },
+  incomeColor: {
+    color: THEME.colors.income,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chipButton: {
+    backgroundColor: THEME.colors.backgroundElevated,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: THEME.borderRadius.full,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.textSecondary,
+    fontFamily: THEME.typography.fontFamily,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(235, 0, 40, 0.15)',
+    backgroundColor: THEME.colors.expenseBg,
+    padding: 10,
+    borderRadius: THEME.borderRadius.md,
+    gap: 8,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(235, 0, 40, 0.3)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
+    borderColor: THEME.colors.expenseBorder,
   },
   errorText: {
-    color: '#ff4d6a',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(235, 235, 245, 0.45)',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-  },
-  insetGroup: {
-    backgroundColor: '#1c1c22',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-  },
-  insetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 52,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  insetRowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#ffffff',
-    flex: 1,
-  },
-  insetTextInput: {
-    flex: 2,
-    fontSize: 15,
-    color: 'rgba(235, 235, 245, 0.8)',
-    textAlign: 'right',
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
-    marginLeft: 16,
-  },
-  dateChipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  dateChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  dateChipActive: {
-    backgroundColor: 'rgba(235, 0, 40, 0.2)',
-  },
-  dateChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(235, 235, 245, 0.7)',
-  },
-  dateChipTextActive: {
-    color: '#ffffff',
+    fontSize: 13,
+    color: THEME.colors.expense,
     fontWeight: '700',
+    fontFamily: THEME.typography.fontFamily,
+  },
+  sectionBlock: {
+    marginBottom: 16,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: THEME.colors.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+    marginLeft: 2,
+    fontFamily: THEME.typography.fontFamily,
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
-    marginBottom: 28,
+    gap: 8,
   },
-  categoryCol: {
-    width: '33.333%',
-    padding: 4,
+  categoryCard: {
+    width: '31%',
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    gap: 6,
   },
-  categoryTile: {
-    backgroundColor: '#18181f',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 6,
+  catIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 96,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
-    position: 'relative',
   },
-  categoryIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  categoryName: {
-    fontSize: 12,
+  categoryCardText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: 'rgba(235, 235, 245, 0.75)',
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 16,
+    fontFamily: THEME.typography.fontFamily,
   },
-  selectedBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  inputCard: {
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingHorizontal: 14,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 10,
+  },
+  textInput: {
+    flex: 1,
+    color: THEME.colors.textPrimary,
+    fontSize: 14,
+    padding: 0,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: THEME.colors.border,
+  },
+  dateSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dateChip: {
+    backgroundColor: THEME.colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionsRow: {
+  dateChipActive: {
+    backgroundColor: THEME.colors.primary,
+    borderColor: THEME.colors.primary,
+  },
+  dateChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.textSecondary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  dateChipTextActive: {
+    color: '#FFFFFF',
+  },
+  dateCustomInputWrap: {
+    flex: 1,
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surface,
+    paddingHorizontal: 12,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    gap: 6,
+  },
+  dateCustomInput: {
+    flex: 1,
+    color: THEME.colors.textPrimary,
+    fontSize: 12,
+    padding: 0,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  buttonGroup: {
+    marginTop: 8,
+  },
+  submitButton: {
+    borderRadius: THEME.borderRadius.lg,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...THEME.shadows.floating,
+  },
+  submitExpense: {
+    backgroundColor: THEME.colors.expense,
+  },
+  submitIncome: {
+    backgroundColor: THEME.colors.income,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    fontFamily: THEME.typography.fontFamily,
   },
 });

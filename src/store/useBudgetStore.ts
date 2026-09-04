@@ -51,15 +51,13 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
         await StorageService.setItem(STORAGE_KEYS.CATEGORIES, storedCategories);
       }
 
-      const hasClearedDemo = await StorageService.getItem<boolean>('@onefinance_demo_budgets_cleared_v2', false);
       let storedBudgets = await StorageService.getItem<Budget[]>(
         STORAGE_KEYS.BUDGETS,
         []
       );
-      if (!hasClearedDemo) {
-        storedBudgets = [];
-        await StorageService.setItem(STORAGE_KEYS.BUDGETS, []);
-        await StorageService.setItem('@onefinance_demo_budgets_cleared_v2', true);
+      if (!storedBudgets || storedBudgets.length === 0) {
+        storedBudgets = INITIAL_DEMO_BUDGETS;
+        await StorageService.setItem(STORAGE_KEYS.BUDGETS, INITIAL_DEMO_BUDGETS);
       }
 
       set({

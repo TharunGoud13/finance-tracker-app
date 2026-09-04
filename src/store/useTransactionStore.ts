@@ -6,8 +6,7 @@ import { INITIAL_DEMO_TRANSACTIONS } from '../constants/demoData';
 interface TransactionFilterState {
   searchQuery: string;
   typeFilter: 'all' | 'income' | 'expense';
-  categoryFilter: string | null; // categoryId or null
-  monthFilter: string; // "YYYY-MM"
+  categoryFilter: string | null;
   sortBy: 'newest' | 'oldest' | 'highest' | 'lowest';
 }
 
@@ -30,13 +29,10 @@ interface TransactionState {
   clearAllTransactions: () => Promise<void>;
 }
 
-const DEFAULT_MONTH = '2026-09';
-
 const DEFAULT_FILTERS: TransactionFilterState = {
   searchQuery: '',
   typeFilter: 'all',
   categoryFilter: null,
-  monthFilter: DEFAULT_MONTH,
   sortBy: 'newest',
 };
 
@@ -49,19 +45,18 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   loadTransactions: async () => {
     set({ isLoading: true });
     try {
-      const hasClearedDemo = await StorageService.getItem<boolean>('@onefinance_demo_cleared_v2', false);
       let data = await StorageService.getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
 
-      if (!hasClearedDemo) {
-        data = [];
-        await StorageService.setItem(STORAGE_KEYS.TRANSACTIONS, []);
-        await StorageService.setItem('@onefinance_demo_cleared_v2', true);
+      // If brand new user with 0 transactions, seed with demo data
+      if (!data || data.length === 0) {
+        data = INITIAL_DEMO_TRANSACTIONS;
+        await StorageService.setItem(STORAGE_KEYS.TRANSACTIONS, INITIAL_DEMO_TRANSACTIONS);
       }
 
       set({ transactions: data, isLoading: false });
     } catch (e) {
       console.error('[useTransactionStore] Error loading:', e);
-      set({ transactions: [], isLoading: false });
+      set({ transactions: INITIAL_DEMO_TRANSACTIONS, isLoading: false });
     }
   },
 
@@ -69,7 +64,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     const now = new Date().toISOString();
     const newTx: Transaction = {
       ...txData,
-      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: `tx-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       createdAt: now,
       updatedAt: now,
     };
@@ -122,7 +117,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   },
 
   resetFilters: () => {
-    set({ filters: { ...DEFAULT_FILTERS, monthFilter: get().filters.monthFilter } });
+    set({ filters: DEFAULT_FILTERS });
   },
 
   seedDemoTransactions: async () => {

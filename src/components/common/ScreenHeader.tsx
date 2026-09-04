@@ -68,9 +68,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 12 : 16,
     paddingBottom: 12,
-    backgroundColor: '#000000',
+    backgroundColor: '#090D16',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   topRow: {
     flexDirection: 'row',
@@ -82,10 +82,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#1c1c22',
+    backgroundColor: '#161D2E',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   titleContainer: {
     flex: 1,
@@ -93,7 +95,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
     letterSpacing: -0.3,
   },
   largeTitleText: {

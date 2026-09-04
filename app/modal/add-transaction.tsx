@@ -53,10 +53,10 @@ export default function AddTransactionModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#090D16',
   },
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#090D16',
   },
 });

@@ -4,645 +4,784 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Pressable,
+  Switch,
   Modal,
   TextInput,
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
-import { useGoalStore } from '../../src/store/useGoalStore';
-import { useRecurringStore } from '../../src/store/useRecurringStore';
-import { StorageService } from '../../src/services/storageService';
-import { SUPPORTED_CURRENCIES } from '../../src/constants/currencies';
-import { Switch } from '../../src/components/ui/Switch';
-import { Button } from '../../src/components/ui/Button';
-import { Icon } from '../../src/components/ui/Icon';
-import { HapticPressable } from '../../src/components/ui/HapticPressable';
-import { AppDialog, AppAlert } from '../../src/components/ui/AppDialog';
-import { UpdateService } from '../../src/services/updateService';
+import { usePrivacyStore } from '../../src/store/usePrivacyStore';
 import { CurrencyCode } from '../../src/types';
+import { THEME } from '../../src/constants/theme';
+import { Icon } from '../../src/components/ui/Icon';
+import { triggerHaptic } from '../../src/utils/haptics';
+
+const CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
+  { code: 'INR', label: 'Indian Rupee', symbol: '₹' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'JPY', label: 'Japanese Yen', symbol: '¥' },
+];
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const settings = useSettingsStore((state) => state.settings);
-  const updateSettings = useSettingsStore((state) => state.updateSettings);
-  const resetAllSettings = useSettingsStore((state) => state.resetAllData);
+  const setCurrency = useSettingsStore((state) => state.setCurrency);
+  const setUserName = useSettingsStore((state) => state.setUserName);
 
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const transactions = useTransactionStore((state) => state.transactions);
+  const seedDemoTransactions = useTransactionStore((state) => state.seedDemoTransactions);
+  const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
+
+  const categories = useBudgetStore((state) => state.categories);
+  const budgets = useBudgetStore((state) => state.budgets);
+  const seedDemoBudgets = useBudgetStore((state) => state.seedDemoBudgets);
+  const clearAllBudgets = useBudgetStore((state) => state.clearAllBudgets);
+
+  const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
+  const toggleSensitiveData = usePrivacyStore((state) => state.toggleSensitiveData);
 
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
-  const [nameInput, setNameInput] = useState(settings.userName);
+  const [nameInput, setNameInput] = useState(settings.userName || 'Tharun');
 
-  // In-app dialog state (replaces Alert.alert)
-  const [dialog, setDialog] = useState<{
-    visible: boolean;
-    title: string;
-    message?: string;
-    icon?: string;
-    iconColor?: string;
-    actions: { label: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[];
-  }>({ visible: false, title: '', actions: [] });
+  const [isClearModalVisible, setIsClearModalVisible] = useState(false);
+  const [statusBanner, setStatusBanner] = useState('');
 
-  const showAlert = (title: string, message?: string, icon = 'Info', iconColor = '#0a84ff') => {
-    setDialog({
-      visible: true, title, message, icon, iconColor,
-      actions: [{ label: 'OK', onPress: () => setDialog((d) => ({ ...d, visible: false })), style: 'cancel' }],
-    });
+  const handleRestoreDemoData = async () => {
+    triggerHaptic.medium();
+    await seedDemoTransactions();
+    await seedDemoBudgets();
+    triggerHaptic.success();
+    setStatusBanner('OnePlus Demo data restored successfully!');
+    setTimeout(() => setStatusBanner(''), 3500);
   };
 
-  const showConfirm = (
-    title: string,
-    message: string,
-    confirmLabel: string,
-    onConfirm: () => void,
-    destructive = false,
-    icon = 'AlertTriangle',
-    iconColor = '#ff453a'
-  ) => {
-    setDialog({
-      visible: true, title, message, icon, iconColor,
-      actions: [
-        { label: 'Cancel', onPress: () => setDialog((d) => ({ ...d, visible: false })), style: 'cancel' },
-        { label: confirmLabel, onPress: () => { setDialog((d) => ({ ...d, visible: false })); onConfirm(); }, style: destructive ? 'destructive' : 'default' },
-      ],
-    });
+  const handleClearData = async () => {
+    setIsClearModalVisible(false);
+    triggerHaptic.heavy();
+    await clearAllTransactions();
+    await clearAllBudgets();
+    triggerHaptic.warning();
+    setStatusBanner('All data has been cleared from local storage.');
+    setTimeout(() => setStatusBanner(''), 3500);
   };
 
   const handleExportData = async () => {
-    try {
-      const json = await StorageService.exportAllData();
-      await Share.share({ title: 'OneFinance Backup Data', message: json });
-    } catch (e) {
-      showAlert('Export Failed', 'Could not export financial data.', 'AlertCircle', '#eb0028');
-    }
-  };
-
-  const handleCheckForUpdates = async () => {
-    setIsCheckingUpdate(true);
-    try {
-      const res = await UpdateService.checkForAndApplyUpdate();
-      if (res.status === 'updated') {
-        showAlert('Update Applied', 'The latest version was downloaded and applied!', 'CheckCircle2', '#30d158');
-      } else if (res.status === 'no_update') {
-        showAlert('Up to Date', 'You are running the latest version of OneFinance.', 'CheckCircle2', '#30d158');
-      } else if (res.status === 'dev_mode') {
-        showAlert(
-          'Development Mode',
-          'Over-The-Air (OTA) updates are active in standalone production and preview builds. In local development, Metro reloads your code automatically.',
-          'Info',
-          '#0a84ff'
-        );
-      } else {
-        showAlert('Update Notice', res.message, 'AlertCircle', '#ff9f0a');
-      }
-    } catch (e: any) {
-      showAlert('Update Error', e?.message || 'Could not verify updates.', 'AlertCircle', '#eb0028');
-    } finally {
-      setIsCheckingUpdate(false);
-    }
-  };
-
-  const handleClearAllData = () => {
-    showConfirm(
-      'Clear All Data?',
-      'This will permanently delete all your transactions, custom categories, budgets, and savings goals. This cannot be undone.',
-      'Clear Everything',
-      async () => {
-        await resetAllSettings();
-        await useTransactionStore.getState().clearAllTransactions();
-        await useBudgetStore.getState().clearAllBudgets();
-        await useGoalStore.getState().clearAllGoals();
-        showAlert('Data Cleared', 'All financial data has been wiped.', 'Trash2', '#ff453a');
+    triggerHaptic.light();
+    const exportPayload = JSON.stringify(
+      {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        transactions,
+        budgets,
+        settings,
       },
-      true
+      null,
+      2
     );
-  };
 
-  const handleSaveName = async () => {
-    if (nameInput.trim()) {
-      await updateSettings({ userName: nameInput.trim() });
-      setIsNameModalVisible(false);
+    try {
+      await Share.share({
+        message: exportPayload,
+        title: 'OnePlus Finance Tracker Backup',
+      });
+      triggerHaptic.success();
+    } catch (e) {
+      triggerHaptic.error();
     }
   };
+
+  const currentCurrencyObj =
+    CURRENCIES.find((c) => c.code === settings.currency) || CURRENCIES[0];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar style="light" />
-      <View style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Screen Header */}
         <View style={styles.header}>
-          <Text style={styles.screenTitle}>Settings</Text>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.headerSubtitle}>Preferences & Local Device Storage</Text>
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Profile Card */}
-          <View style={styles.profileCard}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>
-                {settings.userName.charAt(0).toUpperCase()}
+        {/* Status Toast */}
+        {statusBanner ? (
+          <View style={styles.toastCard}>
+            <Icon name="CheckCircle2" size={16} color={THEME.colors.primary} />
+            <Text style={styles.toastText}>{statusBanner}</Text>
+          </View>
+        ) : null}
+
+        {/* Local Storage Information Hero Card */}
+        <View style={styles.storageCard}>
+          <View style={styles.storageCardHeader}>
+            <View style={styles.storageIconWrap}>
+              <Icon name="HardDrive" size={20} color={THEME.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.storageTitleRow}>
+                <Text style={styles.storageTitle}>Local Mobile Storage</Text>
+                <View style={styles.offlineBadge}>
+                  <View style={styles.onlineDot} />
+                  <Text style={styles.offlineBadgeText}>100% Offline</Text>
+                </View>
+              </View>
+              <Text style={styles.storageSubtitle}>
+                Persistent in mobile AsyncStorage. Never Settle on Privacy.
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{settings.userName}</Text>
-              <Text style={styles.userRole}>Personal Account</Text>
+          </View>
+
+          <View style={styles.storageStatsGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{transactions.length}</Text>
+              <Text style={styles.statLabel}>Transactions</Text>
             </View>
-            <HapticPressable
-              onPress={() => { setNameInput(settings.userName); setIsNameModalVisible(true); }}
-              hapticType="light"
-              style={styles.editBtn}
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{categories.length}</Text>
+              <Text style={styles.statLabel}>Categories</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{budgets.length}</Text>
+              <Text style={styles.statLabel}>Active Budgets</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Section: General Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>GENERAL PREFERENCES</Text>
+          <View style={styles.card}>
+            {/* Currency Selector */}
+            <Pressable
+              style={styles.rowItem}
+              onPress={() => {
+                triggerHaptic.selection();
+                setIsCurrencyModalVisible(true);
+              }}
             >
-              <Text style={styles.editBtnText}>Edit</Text>
-            </HapticPressable>
-          </View>
-
-          {/* Finance Tools */}
-          <Text style={styles.sectionLabel}>FINANCE TOOLS</Text>
-          <View style={styles.group}>
-            <SettingsRow
-              iconName="Target"
-              iconBg="#30d158"
-              label="Savings Goals"
-              onPress={() => router.push('/modal/savings-goals')}
-              showChevron
-            />
-            <View style={styles.divider} />
-            <SettingsRow
-              iconName="Repeat"
-              iconBg="#0a84ff"
-              label="Recurring Transactions"
-              onPress={() => router.push('/modal/recurring')}
-              showChevron
-            />
-            <View style={styles.divider} />
-            <SettingsRow
-              iconName="Tag"
-              iconBg="#af52de"
-              label="Custom Categories"
-              onPress={() => router.push('/modal/manage-categories')}
-              showChevron
-            />
-          </View>
-
-          {/* Preferences */}
-          <Text style={styles.sectionLabel}>PREFERENCES</Text>
-          <View style={styles.group}>
-            <View style={styles.row}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#ff9f0a' }]}>
-                  <Icon name="DollarSign" size={16} color="#ffffff" />
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
+                  <Icon name="DollarSign" size={18} color={THEME.colors.primary} />
                 </View>
-                <Text style={styles.rowLabel}>Currency</Text>
+                <View>
+                  <Text style={styles.rowTitle}>Currency</Text>
+                  <Text style={styles.rowSubtitle}>
+                    {currentCurrencyObj.label} ({currentCurrencyObj.symbol})
+                  </Text>
+                </View>
               </View>
-              <HapticPressable
-                onPress={() => setIsCurrencyModalVisible(true)}
-                hapticType="light"
-                style={styles.rowRight}
-              >
-                <Text style={styles.rowValue}>{SUPPORTED_CURRENCIES[settings.currency]?.label}</Text>
-                <Icon name="ChevronRight" size={16} color="rgba(235, 235, 245, 0.3)" />
-              </HapticPressable>
-            </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
+
             <View style={styles.divider} />
-            <View style={styles.row}>
+
+            {/* Profile Name */}
+            <Pressable
+              style={styles.rowItem}
+              onPress={() => {
+                triggerHaptic.selection();
+                setNameInput(settings.userName || '');
+                setIsNameModalVisible(true);
+              }}
+            >
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#ff453a' }]}>
-                  <Icon name="Bell" size={16} color="#ffffff" />
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.incomeBg }]}>
+                  <Icon name="User" size={18} color={THEME.colors.income} />
                 </View>
-                <Text style={styles.rowLabel}>Daily Reminders</Text>
+                <View>
+                  <Text style={styles.rowTitle}>User Name</Text>
+                  <Text style={styles.rowSubtitle}>{settings.userName || 'Tharun'}</Text>
+                </View>
+              </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            {/* Privacy Mode */}
+            <View style={styles.rowItem}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 159, 10, 0.15)' }]}>
+                  <Icon name="EyeOff" size={18} color={THEME.colors.warning} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Privacy Mode</Text>
+                  <Text style={styles.rowSubtitle}>Hide sensitive balances on screen</Text>
+                </View>
               </View>
               <Switch
-                value={settings.notificationsEnabled}
-                onValueChange={(val) => updateSettings({ notificationsEnabled: val })}
+                value={!isSensitiveDataVisible}
+                onValueChange={() => {
+                  triggerHaptic.selection();
+                  toggleSensitiveData();
+                }}
+                trackColor={{ false: THEME.colors.surfaceSubtle, true: THEME.colors.primary }}
+                thumbColor="#FFFFFF"
               />
             </View>
           </View>
+        </View>
 
-          {/* Privacy & Security */}
-          <Text style={styles.sectionLabel}>PRIVACY & SECURITY</Text>
-          <View style={styles.group}>
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#5e5ce6' }]}>
-                  <Icon name="EyeOff" size={16} color="#ffffff" />
-                </View>
-                <Text style={styles.rowLabel}>Hide on Background</Text>
-              </View>
-              <Switch
-                value={settings.autoLockOnBackground}
-                onValueChange={(val) => updateSettings({ autoLockOnBackground: val })}
-              />
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#64d2ff' }]}>
-                  <Icon name="Fingerprint" size={16} color="#ffffff" />
-                </View>
-                <Text style={styles.rowLabel}>Biometric Unlock</Text>
-              </View>
-              <Switch
-                value={settings.biometricAuthEnabled}
-                onValueChange={(val) => updateSettings({ biometricAuthEnabled: val })}
-              />
-            </View>
-          </View>
-
-          {/* Data Management */}
+        {/* Section: Data Storage Actions */}
+        <View style={styles.section}>
           <Text style={styles.sectionLabel}>DATA MANAGEMENT</Text>
-          <View style={styles.group}>
-            <View style={styles.row}>
+          <View style={styles.card}>
+            {/* Seed Demo Data */}
+            <Pressable style={styles.rowItem} onPress={handleRestoreDemoData}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#636366' }]}>
-                  <Icon name="Database" size={16} color="#ffffff" />
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
+                  <Icon name="Database" size={18} color={THEME.colors.primary} />
                 </View>
-                <Text style={styles.rowLabel}>Local Storage Used</Text>
+                <View>
+                  <Text style={styles.rowTitle}>Load Demo Data</Text>
+                  <Text style={styles.rowSubtitle}>Populate sample expenses & budgets</Text>
+                </View>
               </View>
-              <Text style={styles.rowValue}>~2.4 MB</Text>
-            </View>
+              <Icon name="Download" size={18} color={THEME.colors.primary} />
+            </Pressable>
+
             <View style={styles.divider} />
-            <SettingsRow
-              iconName="Download"
-              iconBg="#5e5ce6"
-              label="Export Data to JSON"
-              onPress={handleExportData}
-              showChevron
-            />
+
+            {/* Export Data */}
+            <Pressable style={styles.rowItem} onPress={handleExportData}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
+                  <Icon name="Share2" size={18} color={THEME.colors.textPrimary} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Backup & Export</Text>
+                  <Text style={styles.rowSubtitle}>Export JSON to files or clipboard</Text>
+                </View>
+              </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
+
             <View style={styles.divider} />
-            <SettingsRow
-              iconName="Trash2"
-              iconBg="rgba(255,69,58,0.15)"
-              iconBorder="rgba(255,69,58,0.3)"
-              iconColor="#ff453a"
-              label="Clear All Data"
-              labelColor="#ff453a"
-              onPress={handleClearAllData}
-              showChevron
-              chevronColor="rgba(255,69,58,0.4)"
-              hapticType="heavy"
-            />
-          </View>
 
-          {/* App Updates Section (OTA EAS Updates) */}
-          <Text style={styles.sectionLabel}>UPDATES & VERSION</Text>
-          <View style={styles.group}>
-            <SettingsRow
-              iconName="RefreshCw"
-              iconBg="rgba(10,132,255,0.2)"
-              iconBorder="rgba(10,132,255,0.35)"
-              iconColor="#0a84ff"
-              label={isCheckingUpdate ? "Checking for Updates..." : "Check for Updates"}
-              labelColor="#0a84ff"
-              onPress={handleCheckForUpdates}
-              showChevron
-              chevronColor="rgba(10,132,255,0.4)"
-              hapticType="medium"
-            />
-          </View>
-
-          {/* About */}
-          <View style={styles.aboutSection}>
-            <Text style={styles.appName}>OneFinance Mobile</Text>
-            <Text style={styles.appVersion}>Version 1.0.0 · EAS OTA Updates Enabled</Text>
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Currency Modal */}
-      <Modal
-        visible={isCurrencyModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsCurrencyModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Select Currency</Text>
-            <View style={{ gap: 8 }}>
-              {Object.keys(SUPPORTED_CURRENCIES).map((key) => {
-                const code = key as CurrencyCode;
-                const conf = SUPPORTED_CURRENCIES[code];
-                const active = settings.currency === code;
-                return (
-                  <HapticPressable
-                    key={code}
-                    onPress={() => { updateSettings({ currency: code }); setIsCurrencyModalVisible(false); }}
-                    hapticType="selection"
-                    style={[styles.currOption, active && styles.currOptionActive]}
-                  >
-                    <View style={styles.currLeft}>
-                      <Text style={styles.currSymbol}>{conf.symbol}</Text>
-                      <Text style={styles.currLabel}>{conf.label}</Text>
-                    </View>
-                    {active && <Icon name="Check" size={18} color="#eb0028" />}
-                  </HapticPressable>
-                );
-              })}
-            </View>
-            <Button title="Close" variant="secondary" onPress={() => setIsCurrencyModalVisible(false)} style={{ marginTop: 14 }} />
+            {/* Clear All Storage */}
+            <Pressable
+              style={styles.rowItem}
+              onPress={() => {
+                triggerHaptic.medium();
+                setIsClearModalVisible(true);
+              }}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.expenseBg }]}>
+                  <Icon name="Trash2" size={18} color={THEME.colors.expense} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { color: THEME.colors.expense }]}>
+                    Clear Local Storage
+                  </Text>
+                  <Text style={styles.rowSubtitle}>Delete all saved records</Text>
+                </View>
+              </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
           </View>
         </View>
-      </Modal>
 
-      {/* Edit Name Modal */}
-      <Modal
-        visible={isNameModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsNameModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Update Name</Text>
-            <TextInput
-              value={nameInput}
-              onChangeText={setNameInput}
-              placeholder="Enter your name"
-              placeholderTextColor="rgba(235, 235, 245, 0.35)"
-              style={styles.nameInput}
-              autoFocus
-            />
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" onPress={() => setIsNameModalVisible(false)} style={{ flex: 1 }} />
-              <Button title="Save" variant="primary" onPress={handleSaveName} style={{ flex: 1 }} />
+        {/* Footer Note */}
+        <View style={styles.footerNote}>
+          <Text style={styles.footerText}>Never Settle • OnePlus Design</Text>
+          <Text style={styles.footerSubtext}>100% On-Device Mobile Storage</Text>
+        </View>
+
+        {/* Currency Picker Modal */}
+        <Modal
+          visible={isCurrencyModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            triggerHaptic.light();
+            setIsCurrencyModalVisible(false);
+          }}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Choose Currency</Text>
+              <View style={styles.currencyList}>
+                {CURRENCIES.map((c) => {
+                  const isSelected = settings.currency === c.code;
+                  return (
+                    <Pressable
+                      key={c.code}
+                      style={[styles.currencyItem, isSelected && styles.currencyItemActive]}
+                      onPress={async () => {
+                        triggerHaptic.selection();
+                        await setCurrency(c.code);
+                        setIsCurrencyModalVisible(false);
+                      }}
+                    >
+                      <View style={styles.currencyInfo}>
+                        <Text style={styles.currencySymbol}>{c.symbol}</Text>
+                        <Text style={styles.currencyName}>{c.label}</Text>
+                      </View>
+                      {isSelected && (
+                        <Icon name="Check" size={18} color={THEME.colors.primary} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Pressable
+                style={styles.modalCloseBtn}
+                onPress={() => {
+                  triggerHaptic.light();
+                  setIsCurrencyModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </Pressable>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Universal in-app dialog (replaces Alert.alert) */}
-      <AppDialog
-        visible={dialog.visible}
-        title={dialog.title}
-        message={dialog.message}
-        icon={dialog.icon}
-        iconColor={dialog.iconColor}
-        actions={dialog.actions}
-        onRequestClose={() => setDialog((d) => ({ ...d, visible: false }))}
-      />
+        {/* Name Edit Modal */}
+        <Modal
+          visible={isNameModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            triggerHaptic.light();
+            setIsNameModalVisible(false);
+          }}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Your Name</Text>
+              <TextInput
+                style={styles.nameTextInput}
+                value={nameInput}
+                onChangeText={setNameInput}
+                placeholder="Enter your name"
+                placeholderTextColor={THEME.colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalButtonsRow}>
+                <Pressable
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    triggerHaptic.light();
+                    setIsNameModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.modalSaveBtn}
+                  onPress={async () => {
+                    await setUserName(nameInput.trim() || 'Tharun');
+                    setIsNameModalVisible(false);
+                    triggerHaptic.success();
+                  }}
+                >
+                  <Text style={styles.modalSaveText}>Save</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Clear Data Confirmation Modal */}
+        <Modal
+          visible={isClearModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            triggerHaptic.light();
+            setIsClearModalVisible(false);
+          }}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.dangerIconWrap}>
+                <Icon name="AlertTriangle" size={26} color={THEME.colors.expense} />
+              </View>
+              <Text style={styles.modalTitle}>Clear Local Storage?</Text>
+              <Text style={styles.confirmSubtitle}>
+                This will delete all saved transactions and budgets from your mobile device. This action cannot be undone.
+              </Text>
+              <View style={styles.modalButtonsRow}>
+                <Pressable
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    triggerHaptic.light();
+                    setIsClearModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSaveBtn, { backgroundColor: THEME.colors.expense }]}
+                  onPress={handleClearData}
+                >
+                  <Text style={styles.modalSaveText}>Clear Everything</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Reusable row component ──────────────────────────────────────────────────
-interface SettingsRowProps {
-  iconName: string;
-  iconBg: string;
-  iconBorder?: string;
-  iconColor?: string;
-  label: string;
-  labelColor?: string;
-  onPress: () => void;
-  showChevron?: boolean;
-  chevronColor?: string;
-  hapticType?: 'light' | 'medium' | 'heavy' | 'selection';
-}
-
-function SettingsRow({
-  iconName, iconBg, iconBorder, iconColor = '#ffffff',
-  label, labelColor = '#ffffff',
-  onPress, showChevron, chevronColor = 'rgba(235,235,245,0.3)',
-  hapticType = 'light',
-}: SettingsRowProps) {
-  return (
-    <HapticPressable
-      onPress={onPress}
-      hapticType={hapticType}
-      style={[
-        styles.row,
-        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
-      ]}
-    >
-      {/* Icon + Label — always row direction */}
-      <View style={styles.rowLeft}>
-        <View
-          style={[
-            styles.iconBox,
-            { backgroundColor: iconBg },
-            iconBorder ? { borderWidth: 1, borderColor: iconBorder } : null,
-          ]}
-        >
-          <Icon name={iconName} size={16} color={iconColor} />
-        </View>
-        <Text style={[styles.rowLabel, labelColor !== '#ffffff' && { color: labelColor }]}>
-          {label}
-        </Text>
-      </View>
-      {/* Chevron — always on the right, same row */}
-      {showChevron && (
-        <View style={styles.chevronBox}>
-          <Icon name="ChevronRight" size={16} color={chevronColor} />
-        </View>
-      )}
-    </HapticPressable>
-  );
-}
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#000000' },
-  container: { flex: 1, backgroundColor: '#000000' },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
+  safeArea: {
+    flex: 1,
+    backgroundColor: THEME.colors.background,
   },
-  screenTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: -0.5,
+  container: {
+    flex: 1,
+    backgroundColor: THEME.colors.background,
   },
-  scrollView: { flex: 1 },
   contentContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 136,
+    paddingBottom: 110,
   },
-
-  // Profile
-  profileCard: {
+  header: {
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: THEME.colors.textPrimary,
+    letterSpacing: -0.5,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  toastCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1c1c22',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 28,
+    backgroundColor: THEME.colors.primaryGlow,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(235, 0, 40, 0.4)',
+    padding: 12,
+    borderRadius: THEME.borderRadius.md,
+    gap: 8,
+    marginBottom: 16,
   },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#eb0028',
+  toastText: {
+    fontSize: 13,
+    color: THEME.colors.textPrimary,
+    fontWeight: '700',
+    fontFamily: THEME.typography.fontFamily,
+  },
+  storageCard: {
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.xl,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: THEME.colors.borderStrong,
+    marginBottom: 20,
+    ...THEME.shadows.card,
+  },
+  storageCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+  },
+  storageIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
-    flexShrink: 0,
   },
-  avatarText: { fontSize: 24, fontWeight: '800', color: '#ffffff' },
-  profileInfo: { flex: 1 },
-  userName: { fontSize: 18, fontWeight: '700', color: '#ffffff', marginBottom: 2 },
-  userRole: { fontSize: 13, color: 'rgba(235,235,245,0.55)' },
-  editBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 12,
+  storageTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
   },
-  editBtnText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
-
-  // Section label
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(235,235,245,0.45)',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginLeft: 4,
+  storageTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
   },
-
-  // Group / rows
-  group: {
-    backgroundColor: '#1c1c22',
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 28,
+  offlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.primaryGlow,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    borderColor: 'rgba(235, 0, 40, 0.4)',
   },
-  row: {
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.primary,
+  },
+  offlineBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: THEME.colors.primaryLight,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  storageSubtitle: {
+    fontSize: 12,
+    color: THEME.colors.textMuted,
+    lineHeight: 16,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  storageStatsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: THEME.colors.backgroundElevated,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: THEME.borderRadius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: THEME.colors.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+    marginLeft: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  card: {
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    overflow: 'hidden',
+  },
+  rowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    minHeight: 56,
-    width: '100%',
-    borderRadius: 12,
   },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
     gap: 12,
-  },
-  iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  rowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#ffffff',
     flex: 1,
   },
-  rowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  rowValue: {
-    fontSize: 14,
-    color: 'rgba(235,235,245,0.55)',
-  },
-  chevronBox: {
-    flexDirection: 'row',
+  itemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
+  },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    marginLeft: 60,
-    marginRight: 16,
+    height: 1,
+    backgroundColor: THEME.colors.border,
   },
-
-  // About
-  aboutSection: { alignItems: 'center', paddingVertical: 20, marginBottom: 20 },
-  appName: { fontSize: 13, fontWeight: '700', color: 'rgba(235,235,245,0.4)' },
-  appVersion: { fontSize: 12, color: 'rgba(235,235,245,0.25)', marginTop: 4 },
-
-  // Modals
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+  footerNote: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    paddingVertical: 16,
   },
-  modalBox: {
+  footerText: {
+    fontSize: 12,
+    color: THEME.colors.primaryLight,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  footerSubtext: {
+    fontSize: 11,
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.82)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#1c1c22',
-    borderRadius: 20,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.xl,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: THEME.colors.borderStrong,
+    ...THEME.shadows.card,
   },
   modalTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 16,
+    fontWeight: '800',
+    color: THEME.colors.textPrimary,
+    marginBottom: 14,
     textAlign: 'center',
+    fontFamily: THEME.typography.fontFamily,
   },
-  currOption: {
+  currencyList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  currencyItemActive: {
+    borderColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.primaryGlow,
+  },
+  currencyInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    gap: 10,
   },
-  currOptionActive: {
-    backgroundColor: 'rgba(235,0,40,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(235,0,40,0.3)',
-  },
-  currLeft: { flexDirection: 'row', alignItems: 'center' },
-  currSymbol: {
+  currencySymbol: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#eb0028',
-    width: 26,
+    color: THEME.colors.primary,
+    width: 24,
+    fontFamily: THEME.typography.fontFamily,
   },
-  currLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginLeft: 6,
+  currencyName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
   },
-  nameInput: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  modalCloseBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 14,
+    color: THEME.colors.textMuted,
+    fontWeight: '700',
+    fontFamily: THEME.typography.fontFamily,
+  },
+  nameTextInput: {
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderRadius: THEME.borderRadius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#ffffff',
-    fontSize: 16,
+    color: THEME.colors.textPrimary,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    marginBottom: 18,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: THEME.colors.surfaceSubtle,
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.textSecondary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: THEME.colors.primary,
+    ...THEME.shadows.floating,
+  },
+  modalSaveText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontFamily: THEME.typography.fontFamily,
+  },
+  dangerIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: THEME.colors.expenseBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  confirmSubtitle: {
+    fontSize: 13,
+    color: THEME.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 18,
+    fontFamily: THEME.typography.fontFamily,
   },
 });
