@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -26,11 +26,38 @@ export default function DashboardScreen() {
   const categories = useBudgetStore((state) => state.categories);
   const selectedMonth = useBudgetStore((state) => state.selectedMonth);
 
-  const currency = useSettingsStore((state) => state.settings.currency);
-  const userName = useSettingsStore((state) => state.settings.userName);
+  const settings = useSettingsStore((state) => state.settings);
+  const currency = settings.currency;
+  const userName = settings.userName;
 
   const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
   const toggleSensitiveData = usePrivacyStore((state) => state.toggleSensitiveData);
+
+  const [isReminderDismissed, setIsReminderDismissed] = useState(false);
+
+  // In-app expense reminder if last expense was > reminderIntervalHours ago
+  const showExpenseReminderPrompt = useMemo(() => {
+    if (isReminderDismissed || !settings.notificationsEnabled) return false;
+    const expenseTxs = transactions
+      .filter((tx) => tx.type === 'expense')
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+      );
+
+    if (expenseTxs.length === 0) return true;
+
+    const lastExpenseTime = new Date(
+      expenseTxs[0].createdAt || expenseTxs[0].date
+    ).getTime();
+    const diffHours = (Date.now() - lastExpenseTime) / (1000 * 60 * 60);
+    return diffHours >= (settings.reminderIntervalHours || 3);
+  }, [
+    transactions,
+    isReminderDismissed,
+    settings.notificationsEnabled,
+    settings.reminderIntervalHours,
+  ]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -139,6 +166,44 @@ export default function DashboardScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* In-App Periodic Expense Reminder Banner */}
+        {showExpenseReminderPrompt && (
+          <View style={styles.reminderBanner}>
+            <View style={styles.reminderLeft}>
+              <View style={styles.reminderIconWrap}>
+                <Icon name="BellRing" size={16} color={THEME.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.reminderTitle}>Update Recent Expenses</Text>
+                <Text style={styles.reminderSubtitle}>
+                  Did you spend anything in the last {settings.reminderIntervalHours || 3} hours?
+                </Text>
+              </View>
+            </View>
+            <View style={styles.reminderActions}>
+              <Pressable
+                style={styles.reminderAddBtn}
+                onPress={() => {
+                  triggerHaptic.medium();
+                  router.push('/modal/add-transaction');
+                }}
+              >
+                <Text style={styles.reminderAddBtnText}>+ Log</Text>
+              </Pressable>
+              <Pressable
+                style={styles.reminderCloseBtn}
+                onPress={() => {
+                  triggerHaptic.light();
+                  setIsReminderDismissed(true);
+                }}
+                hitSlop={8}
+              >
+                <Icon name="X" size={16} color={THEME.colors.textMuted} />
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         {/* Hero Balance Card */}
         <View style={styles.heroCard}>
@@ -842,5 +907,64 @@ const styles = StyleSheet.create({
   },
   amountIncome: {
     color: THEME.colors.income,
+  },
+  reminderBanner: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: THEME.borderRadius.lg,
+    backgroundColor: 'rgba(235, 0, 41, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(235, 0, 41, 0.25)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  reminderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  reminderIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.primaryGlow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reminderTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  reminderSubtitle: {
+    fontSize: 11,
+    color: THEME.colors.textSecondary,
+    marginTop: 1,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  reminderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reminderAddBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: THEME.colors.primary,
+  },
+  reminderAddBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: THEME.typography.fontFamily,
+  },
+  reminderCloseBtn: {
+    padding: 4,
   },
 });

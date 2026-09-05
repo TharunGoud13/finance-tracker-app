@@ -20,6 +20,7 @@ import { useBudgetStore } from '../../src/store/useBudgetStore';
 import { useGoalStore } from '../../src/store/useGoalStore';
 import { usePrivacyStore } from '../../src/store/usePrivacyStore';
 import { UpdateService } from '../../src/services/updateService';
+import { NotificationService } from '../../src/services/notificationService';
 import { CurrencyCode } from '../../src/types';
 import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
@@ -37,6 +38,8 @@ export default function SettingsScreen() {
   const settings = useSettingsStore((state) => state.settings);
   const setCurrency = useSettingsStore((state) => state.setCurrency);
   const setUserName = useSettingsStore((state) => state.setUserName);
+  const setNotificationsEnabled = useSettingsStore((state) => state.setNotificationsEnabled);
+  const setReminderInterval = useSettingsStore((state) => state.setReminderInterval);
 
   const transactions = useTransactionStore((state) => state.transactions);
   const clearAllTransactions = useTransactionStore((state) => state.clearAllTransactions);
@@ -55,6 +58,46 @@ export default function SettingsScreen() {
 
   const [isClearModalVisible, setIsClearModalVisible] = useState(false);
   const [statusBanner, setStatusBanner] = useState('');
+  const [isTestingNotification, setIsTestingNotification] = useState(false);
+
+  const handleToggleNotifications = async (val: boolean) => {
+    triggerHaptic.selection();
+    await setNotificationsEnabled(val);
+    setStatusBanner(
+      val
+        ? `Expense reminders active (Every ${settings.reminderIntervalHours || 3} hours)`
+        : 'Expense reminders disabled'
+    );
+    setTimeout(() => setStatusBanner(''), 3500);
+  };
+
+  const handleSelectInterval = async (hours: number) => {
+    triggerHaptic.selection();
+    await setReminderInterval(hours);
+    setStatusBanner(`Reminder scheduled for every ${hours} hours`);
+    setTimeout(() => setStatusBanner(''), 3000);
+  };
+
+  const handleTestNotification = async () => {
+    triggerHaptic.medium();
+    setIsTestingNotification(true);
+    try {
+      const res = await NotificationService.sendTestNotification();
+      setIsTestingNotification(false);
+      if (res.success) {
+        triggerHaptic.success();
+        setStatusBanner('Test reminder sent! Check your notification tray.');
+        setTimeout(() => setStatusBanner(''), 3500);
+      } else {
+        triggerHaptic.warning();
+        Alert.alert('Notification Notice', res.message);
+      }
+    } catch (e: any) {
+      setIsTestingNotification(false);
+      triggerHaptic.error();
+      Alert.alert('Error', e?.message || 'Could not send test notification.');
+    }
+  };
 
   // Updates state
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -309,6 +352,122 @@ export default function SettingsScreen() {
                 thumbColor="#FFFFFF"
               />
             </View>
+          </View>
+        </View>
+
+        {/* Section: Notifications & Expense Reminders */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>NOTIFICATIONS & REMINDERS</Text>
+          <View style={styles.card}>
+            {/* Master Toggle */}
+            <View style={styles.rowItem}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
+                  <Icon name="BellRing" size={18} color={THEME.colors.primary} />
+                </View>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle}>Expense Reminders</Text>
+                  <Text style={styles.rowSubtitle}>
+                    {settings.notificationsEnabled
+                      ? `Active • Reminds every ${settings.reminderIntervalHours || 3} hours`
+                      : 'Disabled • Turn on for timely reminders'}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={settings.notificationsEnabled}
+                onValueChange={handleToggleNotifications}
+                trackColor={{ false: THEME.colors.surfaceSubtle, true: THEME.colors.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            {settings.notificationsEnabled && (
+              <>
+                <View style={styles.divider} />
+
+                {/* Interval Selection */}
+                <View style={styles.intervalContainer}>
+                  <View style={styles.intervalHeader}>
+                    <Text style={styles.intervalTitle}>REMINDER FREQUENCY</Text>
+                    <Text style={styles.intervalSubtitle}>
+                      Prompt to log expenses every {settings.reminderIntervalHours || 3} hours
+                    </Text>
+                  </View>
+
+                  <View style={styles.intervalChipsRow}>
+                    {[
+                      { hours: 3, label: 'Every 3 Hours', tag: 'Recommended' },
+                      { hours: 4, label: 'Every 4 Hours', tag: 'Balanced' },
+                      { hours: 6, label: 'Every 6 Hours', tag: 'Relaxed' },
+                    ].map((item) => {
+                      const isActive = (settings.reminderIntervalHours || 3) === item.hours;
+                      return (
+                        <Pressable
+                          key={item.hours}
+                          style={[
+                            styles.intervalChip,
+                            isActive && styles.intervalChipActive,
+                          ]}
+                          onPress={() => handleSelectInterval(item.hours)}
+                        >
+                          <Text
+                            style={[
+                              styles.intervalChipText,
+                              isActive && styles.intervalChipTextActive,
+                            ]}
+                          >
+                            {item.hours} hrs
+                          </Text>
+                          <Text
+                            style={[
+                              styles.intervalChipTag,
+                              isActive && styles.intervalChipTagActive,
+                            ]}
+                          >
+                            {item.tag}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                {/* Send Test Notification Button */}
+                <Pressable
+                  style={styles.rowItem}
+                  disabled={isTestingNotification}
+                  onPress={handleTestNotification}
+                >
+                  <View style={styles.rowLeft}>
+                    <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
+                      {isTestingNotification ? (
+                        <ActivityIndicator size="small" color={THEME.colors.primary} />
+                      ) : (
+                        <Icon name="Send" size={18} color={THEME.colors.textPrimary} />
+                      )}
+                    </View>
+                    <View>
+                      <Text style={styles.rowTitle}>Send Test Notification</Text>
+                      <Text style={styles.rowSubtitle}>
+                        Test audio, banner & vibration immediately
+                      </Text>
+                    </View>
+                  </View>
+                  <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+                </Pressable>
+
+                {/* Educational Tip Box */}
+                <View style={styles.notificationTipCard}>
+                  <Icon name="Sparkles" size={15} color={THEME.colors.primary} />
+                  <Text style={styles.notificationTipText}>
+                    Tapping the notification opens OneFinance directly to the expense logger so you can record spending in 5 seconds.
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -921,6 +1080,89 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: THEME.colors.textSecondary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  intervalContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  intervalHeader: {
+    marginBottom: 10,
+  },
+  intervalTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    color: THEME.colors.textMuted,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  intervalSubtitle: {
+    fontSize: 12,
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  intervalChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  intervalChip: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intervalChipActive: {
+    borderColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.primaryGlow,
+  },
+  intervalChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.colors.textSecondary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  intervalChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  intervalChipTag: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: THEME.colors.textMuted,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  intervalChipTagActive: {
+    color: THEME.colors.primary,
+    fontWeight: '700',
+  },
+  notificationTipCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    marginTop: 4,
+    padding: 12,
+    borderRadius: THEME.borderRadius.md,
+    backgroundColor: 'rgba(235, 0, 41, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(235, 0, 41, 0.15)',
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  notificationTipText: {
+    flex: 1,
+    fontSize: 12,
+    color: THEME.colors.textSecondary,
+    lineHeight: 17,
     fontFamily: THEME.typography.fontFamily,
   },
 });

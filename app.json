@@ -35,7 +35,15 @@
       "expo-splash-screen",
       "expo-status-bar",
       "expo-updates",
-      "expo-local-authentication"
+      "expo-local-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#EB0029",
+          "defaultChannel": "expense-reminders"
+        }
+      ]
     ],
     "updates": {
       "url": "https://u.expo.dev/fa1c3c50-b82e-47b2-8578-a5b1f74a38ac"

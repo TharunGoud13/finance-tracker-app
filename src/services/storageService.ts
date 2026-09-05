@@ -82,6 +82,7 @@ export const StorageService = {
       notificationsEnabled: true,
       notificationThresholds: [50, 75, 90, 100],
       dailyReminderTime: '21:00',
+      reminderIntervalHours: 3,
     });
 
     const exportPayload: ExportDataPayload = {

@@ -89,6 +89,7 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   notificationThresholds: number[]; // e.g. [50, 75, 90, 100]
   dailyReminderTime: string; // e.g. "21:00"
+  reminderIntervalHours: number; // e.g. 3 or 4 hours
 }
 
 export type BudgetHealthStatus = 'healthy' | 'moderate' | 'warning' | 'exceeded';
