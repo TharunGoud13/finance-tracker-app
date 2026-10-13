@@ -281,16 +281,16 @@ export default function SettingsScreen() {
 
           <View style={styles.storageStatsGrid}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{transactions.length}</Text>
-              <Text style={styles.statLabel}>Transactions</Text>
+              <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit>{transactions.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Transactions</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{categories.length}</Text>
-              <Text style={styles.statLabel}>Categories</Text>
+              <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit>{categories.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Categories</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{budgets.length}</Text>
-              <Text style={styles.statLabel}>Active Budgets</Text>
+              <Text style={styles.statNumber} numberOfLines={1} adjustsFontSizeToFit>{budgets.length}</Text>
+              <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Active Budgets</Text>
             </View>
           </View>
         </View>
@@ -311,9 +311,9 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
                   <Icon name="DollarSign" size={18} color={THEME.colors.primary} />
                 </View>
-                <View>
-                  <Text style={styles.rowTitle}>Currency</Text>
-                  <Text style={styles.rowSubtitle}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>Currency</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>
                     {currentCurrencyObj.label} ({currentCurrencyObj.symbol})
                   </Text>
                 </View>
@@ -336,9 +336,9 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: THEME.colors.incomeBg }]}>
                   <Icon name="User" size={18} color={THEME.colors.income} />
                 </View>
-                <View>
-                  <Text style={styles.rowTitle}>User Name</Text>
-                  <Text style={styles.rowSubtitle}>{settings.userName || 'Tharun'}</Text>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>User Name</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>{settings.userName || 'Tharun'}</Text>
                 </View>
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
@@ -407,6 +407,8 @@ export default function SettingsScreen() {
                               styles.intervalChipText,
                               isActive && styles.intervalChipTextActive,
                             ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
                           >
                             {item.hours} hrs
                           </Text>
@@ -415,6 +417,8 @@ export default function SettingsScreen() {
                               styles.intervalChipTag,
                               isActive && styles.intervalChipTagActive,
                             ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
                           >
                             {item.tag}
                           </Text>
@@ -440,9 +444,9 @@ export default function SettingsScreen() {
                         <Icon name="Send" size={18} color={THEME.colors.textPrimary} />
                       )}
                     </View>
-                    <View>
-                      <Text style={styles.rowTitle}>Send Test Notification</Text>
-                      <Text style={styles.rowSubtitle}>
+                    <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>Send Test Notification</Text>
+                      <Text style={styles.rowSubtitle} numberOfLines={1}>
                         Test audio, banner & vibration immediately
                       </Text>
                     </View>
@@ -472,9 +476,9 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
                   <Icon name="Share2" size={18} color={THEME.colors.textPrimary} />
                 </View>
-                <View>
-                  <Text style={styles.rowTitle}>Backup & Export</Text>
-                  <Text style={styles.rowSubtitle}>Export JSON to files or clipboard</Text>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>Backup & Export</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>Export JSON to files or clipboard</Text>
                 </View>
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
@@ -494,11 +498,11 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: THEME.colors.expenseBg }]}>
                   <Icon name="Trash2" size={18} color={THEME.colors.expense} />
                 </View>
-                <View>
-                  <Text style={[styles.rowTitle, { color: THEME.colors.expense }]}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={[styles.rowTitle, { color: THEME.colors.expense }]} numberOfLines={1}>
                     Clear Local Storage
                   </Text>
-                  <Text style={styles.rowSubtitle}>Delete all saved records (start fresh)</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>Delete all saved records (start fresh)</Text>
                 </View>
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
@@ -548,9 +552,9 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
                   <Icon name="Info" size={18} color={THEME.colors.textPrimary} />
                 </View>
-                <View>
-                  <Text style={styles.rowTitle}>App Version</Text>
-                  <Text style={styles.rowSubtitle}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>App Version</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>
                     v1.1.0 • EAS Channel: {updateMetadata.channel}
                   </Text>
                 </View>
@@ -586,9 +590,9 @@ export default function SettingsScreen() {
                 <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
                   <Icon name="RotateCw" size={18} color={THEME.colors.primary} />
                 </View>
-                <View>
-                  <Text style={styles.rowTitle}>Reload Application</Text>
-                  <Text style={styles.rowSubtitle}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>Reload Application</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>
                     Force restart into latest downloaded update
                   </Text>
                 </View>
@@ -863,9 +867,10 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: THEME.colors.backgroundElevated,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: THEME.borderRadius.md,
     alignItems: 'center',
     borderWidth: 1,
@@ -882,6 +887,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: THEME.colors.textMuted,
     marginTop: 2,
+    textAlign: 'center',
     fontFamily: THEME.typography.fontFamily,
   },
   section: {
@@ -915,6 +921,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 0,
   },
   itemIcon: {
     width: 36,
@@ -1136,8 +1143,9 @@ const styles = StyleSheet.create({
   },
   intervalChip: {
     flex: 1,
+    minWidth: 0,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: THEME.borderRadius.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',

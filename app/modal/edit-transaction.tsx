@@ -10,6 +10,7 @@ import { ScreenHeader } from '../../src/components/common/ScreenHeader';
 import { DeleteConfirmDialog } from '../../src/components/transaction/DeleteConfirmDialog';
 import { HapticPressable } from '../../src/components/ui/HapticPressable';
 import { Icon } from '../../src/components/ui/Icon';
+import { THEME } from '../../src/constants/theme';
 import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function EditTransactionModal() {
@@ -97,11 +98,11 @@ export default function EditTransactionModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: THEME.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: THEME.colors.background,
   },
   deleteHeaderBtn: {
     width: 38,

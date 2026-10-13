@@ -207,48 +207,81 @@ export default function DashboardScreen() {
             {displayAmount(netBalance)}
           </Text>
 
-          {/* Cashflow & Wealth Breakdown Row */}
-          <View style={styles.cashFlowRow}>
-            {/* Income Card */}
-            <Pressable
-              style={[styles.cashFlowBox, styles.incomeBox]}
-              onPress={() => triggerHaptic.light()}
-            >
-              <View style={styles.cashFlowIconWrap}>
-                <Icon name="ArrowDownLeft" size={14} color={THEME.colors.income} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cashFlowLabel}>Income</Text>
-                <Text style={styles.incomeAmount} numberOfLines={1}>{displayAmount(totalIncome)}</Text>
-              </View>
-            </Pressable>
+          {/* Cashflow & Wealth Breakdown (2+1 Layout: Inflow/Outflow + Wealth Pillar) */}
+          <View style={styles.cashFlowContainer}>
+            {/* Top Tier: Living Inflow & Outflow (50% / 50%) */}
+            <View style={styles.cashFlowTopRow}>
+              {/* Income Box */}
+              <Pressable
+                style={[styles.cashFlowBox, styles.incomeBox]}
+                onPress={() => {
+                  triggerHaptic.light();
+                  router.push('/(tabs)/budget');
+                }}
+              >
+                <View style={styles.cashFlowBoxHeader}>
+                  <View style={[styles.cashFlowIconWrap, { backgroundColor: THEME.colors.incomeBg }]}>
+                    <Icon name="ArrowDownLeft" size={14} color={THEME.colors.income} />
+                  </View>
+                  <Text style={styles.cashFlowLabel}>Income</Text>
+                </View>
+                <Text
+                  style={styles.incomeAmount}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {displayAmount(totalIncome)}
+                </Text>
+              </Pressable>
 
-            {/* Expense Card */}
-            <Pressable
-              style={[styles.cashFlowBox, styles.expenseBox]}
-              onPress={() => triggerHaptic.light()}
-            >
-              <View style={styles.cashFlowIconWrap}>
-                <Icon name="ArrowUpRight" size={14} color={THEME.colors.expense} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cashFlowLabel}>Expenses</Text>
-                <Text style={styles.expenseAmount} numberOfLines={1}>{displayAmount(totalExpense)}</Text>
-              </View>
-            </Pressable>
+              {/* Expense Box */}
+              <Pressable
+                style={[styles.cashFlowBox, styles.expenseBox]}
+                onPress={() => {
+                  triggerHaptic.light();
+                  router.push('/(tabs)/budget');
+                }}
+              >
+                <View style={styles.cashFlowBoxHeader}>
+                  <View style={[styles.cashFlowIconWrap, { backgroundColor: THEME.colors.expenseBg }]}>
+                    <Icon name="ArrowUpRight" size={14} color={THEME.colors.expense} />
+                  </View>
+                  <Text style={styles.cashFlowLabel}>Expenses</Text>
+                </View>
+                <Text
+                  style={styles.expenseAmount}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {displayAmount(totalExpense)}
+                </Text>
+              </Pressable>
+            </View>
 
-            {/* Investment Card */}
+            {/* Bottom Tier: Investments / Future Wealth (Full Width) */}
             <Pressable
-              style={[styles.cashFlowBox, styles.investmentBox]}
-              onPress={() => triggerHaptic.light()}
+              style={styles.investmentFullCard}
+              onPress={() => {
+                triggerHaptic.light();
+                router.push('/(tabs)/budget');
+              }}
             >
-              <View style={styles.cashFlowIconWrap}>
-                <Icon name="TrendingUp" size={14} color={THEME.colors.investment} />
+              <View style={styles.investmentLeftBlock}>
+                <View style={[styles.cashFlowIconWrap, { backgroundColor: THEME.colors.investmentBg }]}>
+                  <Icon name="TrendingUp" size={15} color={THEME.colors.investment} />
+                </View>
+                <View style={styles.investmentLabelCol}>
+                  <Text style={styles.investmentTitle}>Investments</Text>
+                  <Text style={styles.investmentSubtitle} numberOfLines={1}>Wealth & Future Assets</Text>
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cashFlowLabel}>Invested</Text>
-                <Text style={styles.investmentAmount} numberOfLines={1}>{displayAmount(totalInvestment)}</Text>
-              </View>
+              <Text
+                style={styles.investmentAmountLarge}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {displayAmount(totalInvestment)}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -265,7 +298,7 @@ export default function DashboardScreen() {
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.expenseBg }]}>
               <Icon name="Minus" size={16} color={THEME.colors.expense} />
             </View>
-            <Text style={styles.actionLabel}>Expense</Text>
+            <Text style={styles.actionLabel} numberOfLines={1} adjustsFontSizeToFit>Expense</Text>
           </Pressable>
 
           <Pressable
@@ -278,7 +311,7 @@ export default function DashboardScreen() {
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.investmentBg }]}>
               <Icon name="TrendingUp" size={16} color={THEME.colors.investment} />
             </View>
-            <Text style={styles.actionLabel}>Invest</Text>
+            <Text style={styles.actionLabel} numberOfLines={1} adjustsFontSizeToFit>Invest</Text>
           </Pressable>
 
           <Pressable
@@ -291,7 +324,7 @@ export default function DashboardScreen() {
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.incomeBg }]}>
               <Icon name="Plus" size={16} color={THEME.colors.income} />
             </View>
-            <Text style={styles.actionLabel}>Income</Text>
+            <Text style={styles.actionLabel} numberOfLines={1} adjustsFontSizeToFit>Income</Text>
           </Pressable>
 
           <Pressable
@@ -304,7 +337,7 @@ export default function DashboardScreen() {
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.primaryGlow }]}>
               <Icon name="PieChart" size={16} color={THEME.colors.primary} />
             </View>
-            <Text style={styles.actionLabel}>Analytics</Text>
+            <Text style={styles.actionLabel} numberOfLines={1} adjustsFontSizeToFit>Analytics</Text>
           </Pressable>
         </View>
 
@@ -489,15 +522,27 @@ export default function DashboardScreen() {
                       </Text>
                     </View>
 
-                    <Text
-                      style={[
-                        styles.transactionAmount,
-                        isExpense ? styles.amountExpense : styles.amountIncome,
-                      ]}
-                    >
-                      {isExpense ? '-' : '+'}
-                      {displayAmount(tx.amount)}
-                    </Text>
+                    {(() => {
+                      const isExpense = tx.type === 'expense';
+                      const isInvestment = tx.type === 'investment';
+                      return (
+                        <Text
+                          style={[
+                            styles.transactionAmount,
+                            isExpense
+                              ? styles.amountExpense
+                              : isInvestment
+                              ? styles.amountInvestment
+                              : styles.amountIncome,
+                          ]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
+                          {isExpense ? '-' : isInvestment ? '•' : '+'}
+                          {displayAmount(tx.amount)}
+                        </Text>
+                      );
+                    })()}
                   </Pressable>
                 );
               })}
@@ -614,19 +659,22 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     fontFamily: THEME.typography.fontFamily,
   },
-  cashFlowRow: {
+  cashFlowContainer: {
+    gap: 10,
+  },
+  cashFlowTopRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   cashFlowBox: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    minWidth: 0,
     backgroundColor: THEME.colors.backgroundElevated,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: THEME.borderRadius.md,
-    gap: 10,
     borderWidth: 1,
+    gap: 6,
   },
   incomeBox: {
     borderColor: THEME.colors.incomeBorder,
@@ -634,68 +682,103 @@ const styles = StyleSheet.create({
   expenseBox: {
     borderColor: THEME.colors.expenseBorder,
   },
-  investmentBox: {
-    borderColor: THEME.colors.investmentBorder,
+  cashFlowBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   cashFlowIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.colors.surfaceSubtle,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cashFlowLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: THEME.colors.textSecondary,
     fontFamily: THEME.typography.fontFamily,
   },
   incomeAmount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: THEME.colors.income,
-    marginTop: 1,
     fontFamily: THEME.typography.fontFamily,
   },
   expenseAmount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: THEME.colors.expense,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  investmentFullCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.colors.backgroundElevated,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.investmentBorder,
+    gap: 10,
+  },
+  investmentLeftBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  investmentLabelCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  investmentTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  investmentSubtitle: {
+    fontSize: 10.5,
+    color: THEME.colors.textMuted,
     marginTop: 1,
     fontFamily: THEME.typography.fontFamily,
   },
-  investmentAmount: {
-    fontSize: 15,
-    fontWeight: '800',
+  investmentAmountLarge: {
+    fontSize: 16,
+    fontWeight: '900',
     color: THEME.colors.investment,
-    marginTop: 1,
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   quickActionsContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 16,
   },
   actionButton: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: THEME.colors.surface,
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.borderRadius.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
   actionButtonExpense: {},
   actionButtonInvestment: {},
   actionButtonIncome: {},
   actionIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -904,6 +987,7 @@ const styles = StyleSheet.create({
   },
   transactionDetails: {
     flex: 1,
+    minWidth: 0,
     marginRight: 10,
   },
   transactionTitle: {
@@ -922,15 +1006,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   amountExpense: {
     color: THEME.colors.expense,
+  },
+  amountInvestment: {
+    color: THEME.colors.investment,
   },
   amountIncome: {
     color: THEME.colors.income,
   },
   reminderBanner: {
-    marginHorizontal: 16,
     marginBottom: 16,
     padding: 12,
     borderRadius: THEME.borderRadius.lg,
@@ -947,6 +1034,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
   },
   reminderIconWrap: {
     width: 32,

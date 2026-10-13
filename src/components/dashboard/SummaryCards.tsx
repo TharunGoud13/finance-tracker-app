@@ -49,76 +49,83 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </View>
       </Card>
 
-      {/* 2. Side-by-Side Income & Expenses Cards */}
+      {/* 2. Side-by-Side Living Flow Cards (Income & Expenses) */}
       <View style={styles.subGrid}>
-        {/* Income Card */}
-        <Card style={styles.subCard}>
-          <View style={styles.subHeader}>
-            <View style={[styles.iconCircle, { backgroundColor: 'rgba(48, 209, 88, 0.15)' }]}>
-              <Icon name="ArrowDownLeft" size={16} color="#30d158" />
+        <View style={styles.subRow}>
+          {/* Income Card */}
+          <Card style={styles.subCard}>
+            <View style={styles.subHeader}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(48, 209, 88, 0.15)' }]}>
+                <Icon name="ArrowDownLeft" size={16} color="#30d158" />
+              </View>
+              <Text style={styles.subLabel} numberOfLines={1}>Income</Text>
             </View>
-            <Text style={styles.subLabel}>Income</Text>
-          </View>
 
-          <SensitiveAmount
-            amountPaise={summary.totalIncomePaise}
-            style={[styles.subAmount, { color: '#30d158' }]}
-          />
+            <SensitiveAmount
+              amountPaise={summary.totalIncomePaise}
+              style={[styles.subAmount, { color: '#30d158' }]}
+            />
 
-          {summary.prevMonthIncomePaise > 0 && (
-            <View style={styles.trendRow}>
-              <Icon
-                name={isIncomePositive ? 'TrendingUp' : 'TrendingDown'}
-                size={12}
-                color={isIncomePositive ? '#30d158' : 'rgba(235, 235, 245, 0.5)'}
-              />
-              <Text style={styles.trendText}>
-                {Math.abs(summary.incomeChangePercentage)}% vs last mo
-              </Text>
+            {summary.prevMonthIncomePaise > 0 && (
+              <View style={styles.trendRow}>
+                <Icon
+                  name={isIncomePositive ? 'TrendingUp' : 'TrendingDown'}
+                  size={12}
+                  color={isIncomePositive ? '#30d158' : 'rgba(235, 235, 245, 0.5)'}
+                />
+                <Text style={styles.trendText} numberOfLines={1}>
+                  {Math.abs(summary.incomeChangePercentage)}% vs last mo
+                </Text>
+              </View>
+            )}
+          </Card>
+
+          {/* Expense Card */}
+          <Card style={styles.subCard}>
+            <View style={styles.subHeader}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(235, 0, 40, 0.15)' }]}>
+                <Icon name="ArrowUpRight" size={16} color="#eb0028" />
+              </View>
+              <Text style={styles.subLabel} numberOfLines={1}>Expenses</Text>
             </View>
-          )}
-        </Card>
 
-        {/* Expense Card */}
-        <Card style={styles.subCard}>
-          <View style={styles.subHeader}>
-            <View style={[styles.iconCircle, { backgroundColor: 'rgba(235, 0, 40, 0.15)' }]}>
-              <Icon name="ArrowUpRight" size={16} color="#eb0028" />
-            </View>
-            <Text style={styles.subLabel}>Expenses</Text>
-          </View>
+            <SensitiveAmount
+              amountPaise={summary.totalExpensePaise}
+              style={[styles.subAmount, { color: '#ffffff' }]}
+            />
 
-          <SensitiveAmount
-            amountPaise={summary.totalExpensePaise}
-            style={[styles.subAmount, { color: '#ffffff' }]}
-          />
+            {summary.prevMonthExpensePaise > 0 && (
+              <View style={styles.trendRow}>
+                <Icon
+                  name={isExpenseLower ? 'TrendingDown' : 'TrendingUp'}
+                  size={12}
+                  color={isExpenseLower ? '#30d158' : '#eb0028'}
+                />
+                <Text style={styles.trendText} numberOfLines={1}>
+                  {Math.abs(summary.expenseChangePercentage)}% vs last mo
+                </Text>
+              </View>
+            )}
+          </Card>
+        </View>
 
-          {summary.prevMonthExpensePaise > 0 && (
-            <View style={styles.trendRow}>
-              <Icon
-                name={isExpenseLower ? 'TrendingDown' : 'TrendingUp'}
-                size={12}
-                color={isExpenseLower ? '#30d158' : '#eb0028'}
-              />
-              <Text style={styles.trendText}>
-                {Math.abs(summary.expenseChangePercentage)}% vs last mo
-              </Text>
-            </View>
-          )}
-        </Card>
-
-        {/* Investment Card */}
-        <Card style={styles.subCard}>
-          <View style={styles.subHeader}>
+        {/* Investment Full-Width Wealth Card */}
+        <Card style={styles.investmentCardFull}>
+          <View style={styles.investmentLeft}>
             <View style={[styles.iconCircle, { backgroundColor: 'rgba(10, 132, 255, 0.15)' }]}>
               <Icon name="TrendingUp" size={16} color="#0a84ff" />
             </View>
-            <Text style={styles.subLabel}>Invested</Text>
+            <View style={styles.investmentTextCol}>
+              <Text style={styles.investmentLabel}>Invested</Text>
+              <Text style={styles.investmentSubtext} numberOfLines={1}>
+                Future Wealth & Long-term Assets
+              </Text>
+            </View>
           </View>
 
           <SensitiveAmount
             amountPaise={summary.totalInvestmentPaise || 0}
-            style={[styles.subAmount, { color: '#0a84ff' }]}
+            style={[styles.investmentAmount, { color: '#0a84ff' }]}
           />
         </Card>
       </View>
@@ -193,11 +200,15 @@ const styles = StyleSheet.create({
     color: 'rgba(235, 235, 245, 0.5)',
   },
   subGrid: {
+    gap: 12,
+  },
+  subRow: {
     flexDirection: 'row',
     gap: 12,
   },
   subCard: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: '#121216',
     borderRadius: 18,
     padding: 14,
@@ -225,7 +236,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   subAmount: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
@@ -238,5 +249,44 @@ const styles = StyleSheet.create({
   trendText: {
     fontSize: 11,
     color: 'rgba(235, 235, 245, 0.5)',
+    flexShrink: 1,
+  },
+  investmentCardFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#121216',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(10, 132, 255, 0.25)',
+    gap: 10,
+  },
+  investmentLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  investmentTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  investmentLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0a84ff',
+  },
+  investmentSubtext: {
+    fontSize: 11,
+    color: 'rgba(235, 235, 245, 0.5)',
+    marginTop: 1,
+  },
+  investmentAmount: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    flexShrink: 0,
   },
 });

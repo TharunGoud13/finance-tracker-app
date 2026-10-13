@@ -301,25 +301,25 @@ export default function BudgetAnalyticsScreen() {
           <View style={styles.triLegendGrid}>
             <View style={styles.legendBox}>
               <View style={[styles.legendDot, { backgroundColor: THEME.colors.income }]} />
-              <View>
-                <Text style={styles.legendLabel}>Income</Text>
-                <Text style={styles.legendValue}>{displayAmount(totalIncome)}</Text>
+              <View style={styles.legendTextWrap}>
+                <Text style={styles.legendLabel} numberOfLines={1}>Income</Text>
+                <Text style={styles.legendValue} numberOfLines={1} adjustsFontSizeToFit>{displayAmount(totalIncome)}</Text>
               </View>
             </View>
 
             <View style={styles.legendBox}>
               <View style={[styles.legendDot, { backgroundColor: THEME.colors.expense }]} />
-              <View>
-                <Text style={styles.legendLabel}>Expenses</Text>
-                <Text style={styles.legendValue}>{displayAmount(totalExpense)}</Text>
+              <View style={styles.legendTextWrap}>
+                <Text style={styles.legendLabel} numberOfLines={1}>Expenses</Text>
+                <Text style={styles.legendValue} numberOfLines={1} adjustsFontSizeToFit>{displayAmount(totalExpense)}</Text>
               </View>
             </View>
 
             <View style={styles.legendBox}>
               <View style={[styles.legendDot, { backgroundColor: THEME.colors.investment }]} />
-              <View>
-                <Text style={styles.legendLabel}>Invested</Text>
-                <Text style={styles.legendValue}>{displayAmount(totalInvestment)}</Text>
+              <View style={styles.legendTextWrap}>
+                <Text style={styles.legendLabel} numberOfLines={1}>Invested</Text>
+                <Text style={styles.legendValue} numberOfLines={1} adjustsFontSizeToFit>{displayAmount(totalInvestment)}</Text>
               </View>
             </View>
           </View>
@@ -339,7 +339,7 @@ export default function BudgetAnalyticsScreen() {
           >
             <Icon
               name="ArrowUpRight"
-              size={15}
+              size={14}
               color={activeTab === 'expenses' ? THEME.colors.expense : THEME.colors.textMuted}
             />
             <Text
@@ -347,6 +347,8 @@ export default function BudgetAnalyticsScreen() {
                 styles.tabBtnText,
                 activeTab === 'expenses' && styles.tabBtnTextActiveExpenses,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               Expenses
             </Text>
@@ -364,7 +366,7 @@ export default function BudgetAnalyticsScreen() {
           >
             <Icon
               name="TrendingUp"
-              size={15}
+              size={14}
               color={activeTab === 'investment' ? THEME.colors.investment : THEME.colors.textMuted}
             />
             <Text
@@ -372,6 +374,8 @@ export default function BudgetAnalyticsScreen() {
                 styles.tabBtnText,
                 activeTab === 'investment' && styles.tabBtnTextActiveInvestment,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               Investment
             </Text>
@@ -389,7 +393,7 @@ export default function BudgetAnalyticsScreen() {
           >
             <Icon
               name="ArrowDownLeft"
-              size={15}
+              size={14}
               color={activeTab === 'income' ? THEME.colors.income : THEME.colors.textMuted}
             />
             <Text
@@ -397,6 +401,8 @@ export default function BudgetAnalyticsScreen() {
                 styles.tabBtnText,
                 activeTab === 'income' && styles.tabBtnTextActiveIncome,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
               Income
             </Text>
@@ -530,8 +536,8 @@ export default function BudgetAnalyticsScreen() {
 
                       <View style={styles.catMeta}>
                         <View style={styles.catNameRow}>
-                          <Text style={styles.catName}>{item.category.name}</Text>
-                          <Text style={styles.catSpent}>{displayAmount(item.spent)}</Text>
+                          <Text style={styles.catName} numberOfLines={1}>{item.category.name}</Text>
+                          <Text style={styles.catSpent} numberOfLines={1} adjustsFontSizeToFit>{displayAmount(item.spent)}</Text>
                         </View>
 
                         {/* Progress Bar */}
@@ -553,7 +559,7 @@ export default function BudgetAnalyticsScreen() {
                         </View>
 
                         <View style={styles.catSubRow}>
-                          <Text style={styles.catSubText}>
+                          <Text style={styles.catSubText} numberOfLines={1}>
                             {item.percentOfTotal}% of monthly expenses
                           </Text>
                           <Text
@@ -561,6 +567,7 @@ export default function BudgetAnalyticsScreen() {
                               styles.catBudgetStatus,
                               item.isOverBudget && styles.catBudgetOver,
                             ]}
+                            numberOfLines={1}
                           >
                             {item.limit > 0
                               ? `Limit: ${displayAmount(item.limit)} (${item.percentOfBudget}%)`
@@ -669,8 +676,8 @@ export default function BudgetAnalyticsScreen() {
 
                       <View style={styles.catMeta}>
                         <View style={styles.catNameRow}>
-                          <Text style={styles.catName}>{item.category.name}</Text>
-                          <Text style={[styles.catSpent, { color: THEME.colors.investment }]}>
+                          <Text style={styles.catName} numberOfLines={1}>{item.category.name}</Text>
+                          <Text style={[styles.catSpent, { color: THEME.colors.investment }]} numberOfLines={1} adjustsFontSizeToFit>
                             {displayAmount(item.invested)}
                           </Text>
                         </View>
@@ -689,10 +696,10 @@ export default function BudgetAnalyticsScreen() {
                         </View>
 
                         <View style={styles.catSubRow}>
-                          <Text style={styles.catSubText}>
+                          <Text style={styles.catSubText} numberOfLines={1}>
                             {item.percentOfTotal}% of total portfolio invested
                           </Text>
-                          <Text style={[styles.catBudgetStatus, { color: THEME.colors.investment }]}>
+                          <Text style={[styles.catBudgetStatus, { color: THEME.colors.investment }]} numberOfLines={1}>
                             Asset Allocation
                           </Text>
                         </View>
@@ -769,8 +776,8 @@ export default function BudgetAnalyticsScreen() {
 
                       <View style={styles.catMeta}>
                         <View style={styles.catNameRow}>
-                          <Text style={styles.catName}>{item.category.name}</Text>
-                          <Text style={[styles.catSpent, { color: THEME.colors.income }]}>
+                          <Text style={styles.catName} numberOfLines={1}>{item.category.name}</Text>
+                          <Text style={[styles.catSpent, { color: THEME.colors.income }]} numberOfLines={1} adjustsFontSizeToFit>
                             {displayAmount(item.amount)}
                           </Text>
                         </View>
@@ -789,10 +796,10 @@ export default function BudgetAnalyticsScreen() {
                         </View>
 
                         <View style={styles.catSubRow}>
-                          <Text style={styles.catSubText}>
+                          <Text style={styles.catSubText} numberOfLines={1}>
                             {item.percentOfTotal}% of total monthly income
                           </Text>
-                          <Text style={[styles.catBudgetStatus, { color: THEME.colors.income }]}>
+                          <Text style={[styles.catBudgetStatus, { color: THEME.colors.income }]} numberOfLines={1}>
                             Inflow Stream
                           </Text>
                         </View>
@@ -860,11 +867,11 @@ export default function BudgetAnalyticsScreen() {
                     <Text style={styles.txDesc} numberOfLines={1}>
                       {tx.description || cat?.name || 'Transaction'}
                     </Text>
-                    <Text style={styles.txMeta}>
+                    <Text style={styles.txMeta} numberOfLines={1}>
                       {cat?.name || tx.type} • {formatDate(tx.date, 'short')}
                     </Text>
                   </View>
-                  <Text style={[styles.txAmount, { color }]}>
+                  <Text style={[styles.txAmount, { color }]} numberOfLines={1} adjustsFontSizeToFit>
                     {tx.type === 'income' ? '+' : tx.type === 'investment' ? '↗ ' : '-'}
                     {displayAmount(tx.amount)}
                   </Text>
@@ -1125,20 +1132,27 @@ const styles = StyleSheet.create({
   },
   triLegendGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 4,
+    gap: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.border,
   },
   legendBox: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  legendTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    flexShrink: 0,
   },
   legendLabel: {
     fontSize: 10,
@@ -1147,7 +1161,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.fontFamily,
   },
   legendValue: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: THEME.colors.textPrimary,
     fontWeight: '800',
     fontFamily: THEME.typography.fontFamily,
@@ -1162,12 +1176,14 @@ const styles = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
+    paddingHorizontal: 4,
     borderRadius: THEME.borderRadius.md,
-    gap: 6,
+    gap: 4,
   },
   tabBtnActiveExpenses: {
     backgroundColor: THEME.colors.expenseBg,
@@ -1185,7 +1201,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.incomeBorder,
   },
   tabBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: THEME.colors.textMuted,
     fontFamily: THEME.typography.fontFamily,
@@ -1398,6 +1414,7 @@ const styles = StyleSheet.create({
   },
   catMeta: {
     flex: 1,
+    minWidth: 0,
   },
   catNameRow: {
     flexDirection: 'row',
@@ -1410,12 +1427,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: THEME.colors.textPrimary,
     fontFamily: THEME.typography.fontFamily,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   catSpent: {
     fontSize: 14,
     fontWeight: '800',
     color: THEME.colors.textPrimary,
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   catProgressTrack: {
     height: 6,
@@ -1437,12 +1458,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: THEME.colors.textMuted,
     fontFamily: THEME.typography.fontFamily,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   catBudgetStatus: {
     fontSize: 11,
     fontWeight: '700',
     color: THEME.colors.primary,
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   catBudgetOver: {
     color: THEME.colors.expense,
@@ -1504,6 +1529,8 @@ const styles = StyleSheet.create({
   },
   txInfo: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   txDesc: {
     fontSize: 13.5,
@@ -1521,6 +1548,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   modalBackdrop: {
     flex: 1,

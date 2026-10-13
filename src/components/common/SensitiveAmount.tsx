@@ -32,5 +32,9 @@ export const SensitiveAmount: React.FC<SensitiveAmountProps> = ({
   const activeCurrency = (currencyCode || defaultCurrency) as any;
   const formattedActual = formatCurrency(amountPaise, activeCurrency, { compact });
 
-  return <Text style={style}>{prefix}{formattedActual}</Text>;
+  return (
+    <Text style={style} numberOfLines={1} adjustsFontSizeToFit>
+      {prefix}{formattedActual}
+    </Text>
+  );
 };

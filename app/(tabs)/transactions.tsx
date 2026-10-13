@@ -164,70 +164,76 @@ export default function TransactionsScreen() {
           )}
         </View>
 
-        {/* Type Filter Pills (All / Expenses / Investments / Income) */}
-        <View style={styles.typeFilterRow}>
-          <Pressable
-            style={[styles.typePill, typeFilter === 'all' && styles.typePillActive]}
-            onPress={() => {
-              triggerHaptic.selection();
-              setTypeFilter('all');
-            }}
+        {/* Type Filter Pills (Horizontal Scrollable: All / Expenses / Investments / Income) */}
+        <View style={styles.typeFilterWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.typeFilterScrollContent}
           >
-            <Text style={[styles.typePillText, typeFilter === 'all' && styles.typePillTextActive]}>
-              All
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.typePill, typeFilter === 'expense' && styles.typePillActiveExpense]}
-            onPress={() => {
-              triggerHaptic.selection();
-              setTypeFilter('expense');
-            }}
-          >
-            <Text
-              style={[
-                styles.typePillText,
-                typeFilter === 'expense' && styles.typePillTextActiveExpense,
-              ]}
+            <Pressable
+              style={[styles.typePill, typeFilter === 'all' && styles.typePillActive]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setTypeFilter('all');
+              }}
             >
-              Expenses
-            </Text>
-          </Pressable>
+              <Text style={[styles.typePillText, typeFilter === 'all' && styles.typePillTextActive]}>
+                All
+              </Text>
+            </Pressable>
 
-          <Pressable
-            style={[styles.typePill, typeFilter === 'investment' && styles.typePillActiveInvestment]}
-            onPress={() => {
-              triggerHaptic.selection();
-              setTypeFilter('investment');
-            }}
-          >
-            <Text
-              style={[
-                styles.typePillText,
-                typeFilter === 'investment' && styles.typePillTextActiveInvestment,
-              ]}
+            <Pressable
+              style={[styles.typePill, typeFilter === 'expense' && styles.typePillActiveExpense]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setTypeFilter('expense');
+              }}
             >
-              Investments
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.typePillText,
+                  typeFilter === 'expense' && styles.typePillTextActiveExpense,
+                ]}
+              >
+                Expenses
+              </Text>
+            </Pressable>
 
-          <Pressable
-            style={[styles.typePill, typeFilter === 'income' && styles.typePillActiveIncome]}
-            onPress={() => {
-              triggerHaptic.selection();
-              setTypeFilter('income');
-            }}
-          >
-            <Text
-              style={[
-                styles.typePillText,
-                typeFilter === 'income' && styles.typePillTextActiveIncome,
-              ]}
+            <Pressable
+              style={[styles.typePill, typeFilter === 'investment' && styles.typePillActiveInvestment]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setTypeFilter('investment');
+              }}
             >
-              Income
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.typePillText,
+                  typeFilter === 'investment' && styles.typePillTextActiveInvestment,
+                ]}
+              >
+                Investments
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.typePill, typeFilter === 'income' && styles.typePillActiveIncome]}
+              onPress={() => {
+                triggerHaptic.selection();
+                setTypeFilter('income');
+              }}
+            >
+              <Text
+                style={[
+                  styles.typePillText,
+                  typeFilter === 'income' && styles.typePillTextActiveIncome,
+                ]}
+              >
+                Income
+              </Text>
+            </Pressable>
+          </ScrollView>
         </View>
 
         {/* Category Filter Horizontal Scroll */}
@@ -328,6 +334,7 @@ export default function TransactionsScreen() {
                   {group.items.map((tx, idx) => {
                     const category = categoryMap.get(tx.categoryId);
                     const isExpense = tx.type === 'expense';
+                    const isInvestment = tx.type === 'investment';
                     const isLast = idx === group.items.length - 1;
 
                     return (
@@ -345,13 +352,32 @@ export default function TransactionsScreen() {
                         <View
                           style={[
                             styles.categoryIconCircle,
-                            { backgroundColor: `${category?.color || '#EB0028'}22` },
+                            {
+                              backgroundColor: `${
+                                category?.color ||
+                                (isInvestment
+                                  ? THEME.colors.investment
+                                  : isExpense
+                                  ? THEME.colors.expense
+                                  : THEME.colors.income)
+                              }22`,
+                            },
                           ]}
                         >
                           <Icon
-                            name={category?.icon || 'DollarSign'}
+                            name={
+                              category?.icon ||
+                              (isInvestment ? 'TrendingUp' : isExpense ? 'ArrowUpRight' : 'ArrowDownLeft')
+                            }
                             size={18}
-                            color={category?.color || THEME.colors.primaryLight}
+                            color={
+                              category?.color ||
+                              (isInvestment
+                                ? THEME.colors.investment
+                                : isExpense
+                                ? THEME.colors.expense
+                                : THEME.colors.income)
+                            }
                           />
                         </View>
 
@@ -359,7 +385,7 @@ export default function TransactionsScreen() {
                           <Text style={styles.txTitle} numberOfLines={1}>
                             {tx.description || category?.name || 'Transaction'}
                           </Text>
-                          <Text style={styles.txCategory}>
+                          <Text style={styles.txCategory} numberOfLines={1}>
                             {category?.name || 'Uncategorized'}
                             {tx.notes ? ` • ${tx.notes}` : ''}
                           </Text>
@@ -368,10 +394,16 @@ export default function TransactionsScreen() {
                         <Text
                           style={[
                             styles.txAmount,
-                            isExpense ? styles.amountExpense : styles.amountIncome,
+                            isExpense
+                              ? styles.amountExpense
+                              : isInvestment
+                              ? styles.amountInvestment
+                              : styles.amountIncome,
                           ]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
                         >
-                          {isExpense ? '-' : '+'}
+                          {isExpense ? '-' : isInvestment ? '•' : '+'}
                           {displayAmount(tx.amount)}
                         </Text>
                       </Pressable>
@@ -417,13 +449,21 @@ export default function TransactionsScreen() {
                       styles.modalAmountText,
                       selectedTx.type === 'expense'
                         ? styles.amountExpense
+                        : selectedTx.type === 'investment'
+                        ? styles.amountInvestment
                         : styles.amountIncome,
                     ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
-                    {selectedTx.type === 'expense' ? '-' : '+'}
+                    {selectedTx.type === 'expense'
+                      ? '-'
+                      : selectedTx.type === 'investment'
+                      ? '•'
+                      : '+'}
                     {displayAmount(selectedTx.amount)}
                   </Text>
-                  <Text style={styles.modalDescription}>
+                  <Text style={styles.modalDescription} numberOfLines={2}>
                     {selectedTx.description || 'No description'}
                   </Text>
                 </View>
@@ -432,20 +472,24 @@ export default function TransactionsScreen() {
                 <View style={styles.modalDetailsList}>
                   <View style={styles.modalDetailRow}>
                     <Text style={styles.modalDetailLabel}>Category</Text>
-                    <Text style={styles.modalDetailValue}>
+                    <Text style={styles.modalDetailValue} numberOfLines={1}>
                       {categoryMap.get(selectedTx.categoryId)?.name || 'General'}
                     </Text>
                   </View>
                   <View style={styles.modalDetailRow}>
                     <Text style={styles.modalDetailLabel}>Date</Text>
-                    <Text style={styles.modalDetailValue}>
+                    <Text style={styles.modalDetailValue} numberOfLines={1}>
                       {formatDate(selectedTx.date, 'full')}
                     </Text>
                   </View>
                   <View style={styles.modalDetailRow}>
                     <Text style={styles.modalDetailLabel}>Type</Text>
-                    <Text style={styles.modalDetailValue}>
-                      {selectedTx.type === 'expense' ? 'Expense' : 'Income'}
+                    <Text style={styles.modalDetailValue} numberOfLines={1}>
+                      {selectedTx.type === 'expense'
+                        ? 'Expense'
+                        : selectedTx.type === 'investment'
+                        ? 'Investment'
+                        : 'Income'}
                     </Text>
                   </View>
                   {selectedTx.notes ? (
@@ -603,19 +647,20 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     fontFamily: THEME.typography.fontFamily,
   },
-  typeFilterRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    backgroundColor: THEME.colors.surfaceSubtle,
-    borderRadius: THEME.borderRadius.md,
-    padding: 3,
+  typeFilterWrapper: {
     marginBottom: 10,
-    gap: 4,
+  },
+  typeFilterScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
   },
   typePill: {
-    flex: 1,
     paddingVertical: 7,
-    borderRadius: THEME.borderRadius.sm,
+    paddingHorizontal: 14,
+    borderRadius: THEME.borderRadius.full,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -787,6 +832,7 @@ const styles = StyleSheet.create({
   },
   txInfo: {
     flex: 1,
+    minWidth: 0,
     marginRight: 10,
   },
   txTitle: {
@@ -805,9 +851,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     fontFamily: THEME.typography.fontFamily,
+    flexShrink: 0,
   },
   amountExpense: {
     color: THEME.colors.expense,
+  },
+  amountInvestment: {
+    color: THEME.colors.investment,
   },
   amountIncome: {
     color: THEME.colors.income,

@@ -7,6 +7,7 @@ import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
 import { TransactionForm } from '../../src/components/forms/TransactionForm';
 import { ScreenHeader } from '../../src/components/common/ScreenHeader';
+import { THEME } from '../../src/constants/theme';
 import { triggerHaptic } from '../../src/utils/haptics';
 
 export default function AddTransactionModal() {
@@ -35,7 +36,7 @@ export default function AddTransactionModal() {
       <View style={styles.container}>
         <ScreenHeader
           title="New Transaction"
-          subtitle="Record expense or income"
+          subtitle="Record expense, investment or income"
           showBack
           onBack={() => router.back()}
         />
@@ -53,10 +54,10 @@ export default function AddTransactionModal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: THEME.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: THEME.colors.background,
   },
 });
