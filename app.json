@@ -2,7 +2,7 @@
   "expo": {
     "name": "OneFinance",
     "slug": "finance-tracker",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "onefinance",
@@ -50,9 +50,7 @@
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 10000
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "experiments": {
       "typedRoutes": true
     },

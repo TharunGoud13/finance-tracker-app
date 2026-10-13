@@ -139,7 +139,7 @@ export default function SettingsScreen() {
 
         Alert.alert(
           'Update Available!',
-          'A new version is available. Would you like to download and restart now?',
+          'OneFinance v1.1.0 is ready. Would you like to download and install now?',
           [
             {
               text: 'Cancel',
@@ -150,15 +150,31 @@ export default function SettingsScreen() {
               },
             },
             {
-              text: 'Download & Restart',
+              text: 'Download & Apply',
               onPress: async () => {
                 setIsDownloadingUpdate(true);
-                setUpdateSubtitle('Applying update bundle...');
-                const downloadResult = await UpdateService.fetchAndApplyUpdate();
-                if (!downloadResult.success) {
-                  setIsDownloadingUpdate(false);
+                setUpdateSubtitle('Downloading v1.1.0 update...');
+                const downloadResult = await UpdateService.downloadUpdateOnly();
+                setIsDownloadingUpdate(false);
+                if (downloadResult.success) {
+                  triggerHaptic.success();
+                  setUpdateSubtitle('v1.1.0 installed • Reopen app to activate');
+                  Alert.alert(
+                    'Update Downloaded!',
+                    'OneFinance v1.1.0 has been downloaded successfully.\n\nTo activate it smoothly, swipe OneFinance away from your Recent Apps and reopen it.',
+                    [
+                      { text: 'Got It (I will reopen)', style: 'default' },
+                      {
+                        text: 'Reload Now',
+                        onPress: async () => {
+                          await UpdateService.reloadApp();
+                        },
+                      },
+                    ]
+                  );
+                } else {
                   setUpdateSubtitle('Failed to install update');
-                  Alert.alert('Update Error', downloadResult.error || 'Could not apply update.');
+                  Alert.alert('Update Error', downloadResult.error || 'Could not download update.');
                 }
               },
             },
@@ -535,7 +551,7 @@ export default function SettingsScreen() {
                 <View>
                   <Text style={styles.rowTitle}>App Version</Text>
                   <Text style={styles.rowSubtitle}>
-                    v1.0.0 • EAS Channel: {updateMetadata.channel}
+                    v1.1.0 • EAS Channel: {updateMetadata.channel}
                   </Text>
                 </View>
               </View>

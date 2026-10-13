@@ -29,13 +29,12 @@ export default function RootLayout() {
       loadRecurring(),
     ]);
 
-    // Background OTA update check on launch for standalone builds
+    // Background OTA download on launch for standalone builds (ready on next launch)
     if (!__DEV__ && Updates.isEnabled) {
       Updates.checkForUpdateAsync()
         .then(async (update) => {
           if (update.isAvailable) {
             await Updates.fetchUpdateAsync();
-            await Updates.reloadAsync();
           }
         })
         .catch(() => {});

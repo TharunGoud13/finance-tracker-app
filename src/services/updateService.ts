@@ -84,6 +84,26 @@ export const UpdateService = {
   },
 
   /**
+   * Downloads the update bundle into local disk cache without forcing an immediate reload
+   */
+  async downloadUpdateOnly(): Promise<{ success: boolean; error?: string }> {
+    if (!Updates.isEnabled) {
+      return { success: false, error: 'Updates are not enabled in this build environment.' };
+    }
+
+    try {
+      await Updates.fetchUpdateAsync();
+      return { success: true };
+    } catch (e: any) {
+      console.error('[UpdateService] Download failed:', e);
+      return {
+        success: false,
+        error: e?.message || 'Failed to download the update.',
+      };
+    }
+  },
+
+  /**
    * Fetches the update bundle and immediately reloads the application
    */
   async fetchAndApplyUpdate(): Promise<{ success: boolean; error?: string }> {
