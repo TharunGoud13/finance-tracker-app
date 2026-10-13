@@ -543,6 +543,42 @@ export default function SettingsScreen() {
                 <Text style={styles.versionBadgeText}>Production</Text>
               </View>
             </View>
+
+            <View style={styles.divider} />
+
+            {/* Restart / Reload App */}
+            <Pressable
+              style={styles.rowItem}
+              onPress={() => {
+                triggerHaptic.medium();
+                Alert.alert(
+                  'Reload Application',
+                  'Reload OneFinance to activate the latest downloaded update bundle?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Reload Now',
+                      onPress: async () => {
+                        await UpdateService.reloadApp();
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: THEME.colors.primaryGlow }]}>
+                  <Icon name="RotateCw" size={18} color={THEME.colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Reload Application</Text>
+                  <Text style={styles.rowSubtitle}>
+                    Force restart into latest downloaded update
+                  </Text>
+                </View>
+              </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
           </View>
         </View>
 

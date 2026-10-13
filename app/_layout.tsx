@@ -3,12 +3,12 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as Updates from 'expo-updates';
 import { useTransactionStore } from '../src/store/useTransactionStore';
 import { useBudgetStore } from '../src/store/useBudgetStore';
 import { useGoalStore } from '../src/store/useGoalStore';
 import { useRecurringStore } from '../src/store/useRecurringStore';
 import { useSettingsStore } from '../src/store/useSettingsStore';
-import { useAppLock } from '../src/hooks/useAppLock';
 import { NotificationService } from '../src/services/notificationService';
 import '../global.css';
 
@@ -28,6 +28,18 @@ export default function RootLayout() {
       loadGoals(),
       loadRecurring(),
     ]);
+
+    // Background OTA update check on launch for standalone builds
+    if (!__DEV__ && Updates.isEnabled) {
+      Updates.checkForUpdateAsync()
+        .then(async (update) => {
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync();
+          }
+        })
+        .catch(() => {});
+    }
 
     // Initialize notification service
     NotificationService.initialize().catch(() => {});

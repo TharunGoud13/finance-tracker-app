@@ -37,12 +37,32 @@ export const UpdateService = {
 
     try {
       const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        return {
+          isAvailable: true,
+          isDevelopment: false,
+          message: 'A new version of OneFinance is available.',
+        };
+      }
+
+      // Check if a downloaded update is pending reload or fetch directly
+      try {
+        const fetchRes = await Updates.fetchUpdateAsync();
+        if (fetchRes.isNew) {
+          return {
+            isAvailable: true,
+            isDevelopment: false,
+            message: 'A new version of OneFinance is downloaded and ready to apply.',
+          };
+        }
+      } catch {
+        // No pending new update
+      }
+
       return {
-        isAvailable: update.isAvailable,
+        isAvailable: false,
         isDevelopment: false,
-        message: update.isAvailable
-          ? 'A new version of OneFinance is available.'
-          : 'You are on the latest version of OneFinance.',
+        message: 'You are on the latest version of OneFinance.',
       };
     } catch (e: any) {
       console.warn('[UpdateService] Check failed:', e);
@@ -51,6 +71,15 @@ export const UpdateService = {
         isDevelopment: false,
         error: e?.message || 'Unable to reach update servers. Please check your internet connection.',
       };
+    }
+  },
+
+  /**
+   * Immediately reloads the application into the latest downloaded bundle
+   */
+  async reloadApp(): Promise<void> {
+    if (Updates.isEnabled) {
+      await Updates.reloadAsync();
     }
   },
 
@@ -68,6 +97,11 @@ export const UpdateService = {
       return { success: true };
     } catch (e: any) {
       console.error('[UpdateService] Download failed:', e);
+      // Fallback: try direct reload if already downloaded
+      try {
+        await Updates.reloadAsync();
+        return { success: true };
+      } catch {}
       return {
         success: false,
         error: e?.message || 'Failed to download or apply the update.',
