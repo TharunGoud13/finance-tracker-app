@@ -116,6 +116,7 @@ export default function ManageCategoriesModal() {
           <SegmentedControl
             options={[
               { value: 'expense', label: 'Expenses', activeColor: '#eb0028' },
+              { value: 'investment', label: 'Investments', activeColor: '#0a84ff' },
               { value: 'income', label: 'Income', activeColor: '#30d158' },
             ]}
             selectedValue={activeTab}

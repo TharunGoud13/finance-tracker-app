@@ -26,6 +26,11 @@ export const THEME = {
     expenseBg: 'rgba(235, 0, 40, 0.14)',
     expenseBorder: 'rgba(235, 0, 40, 0.30)',
 
+    investment: '#0A84FF', // Crisp Electric Blue / Cyan for Assets & Future
+    investmentBg: 'rgba(10, 132, 255, 0.14)',
+    investmentBorder: 'rgba(10, 132, 255, 0.30)',
+    investmentGlow: 'rgba(10, 132, 255, 0.25)',
+
     savings: '#EB0028',
     savingsBg: 'rgba(235, 0, 40, 0.14)',
 

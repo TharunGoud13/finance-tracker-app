@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router';
 import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
-import { usePrivacyStore } from '../../src/store/usePrivacyStore';
 import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
 import { formatCurrency, formatDate, getGreeting } from '../../src/utils/formatters';
@@ -29,9 +28,6 @@ export default function DashboardScreen() {
   const settings = useSettingsStore((state) => state.settings);
   const currency = settings.currency;
   const userName = settings.userName;
-
-  const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
-  const toggleSensitiveData = usePrivacyStore((state) => state.toggleSensitiveData);
 
   const [isReminderDismissed, setIsReminderDismissed] = useState(false);
 
@@ -73,12 +69,15 @@ export default function DashboardScreen() {
   }, [transactions, selectedMonth]);
 
   // Financial Metrics
-  const { totalIncome, totalExpense, netBalance } = useMemo(() => {
+  const { totalIncome, totalExpense, totalInvestment, netBalance } = useMemo(() => {
     let income = 0;
     let expense = 0;
+    let investment = 0;
     for (const tx of monthTransactions) {
       if (tx.type === 'income') {
         income += tx.amount;
+      } else if (tx.type === 'investment') {
+        investment += tx.amount;
       } else {
         expense += tx.amount;
       }
@@ -86,7 +85,8 @@ export default function DashboardScreen() {
     return {
       totalIncome: income,
       totalExpense: expense,
-      netBalance: income - expense,
+      totalInvestment: investment,
+      netBalance: income - expense - investment,
     };
   }, [monthTransactions]);
 
@@ -131,7 +131,6 @@ export default function DashboardScreen() {
   const { greeting } = getGreeting(userName || 'Tharun');
 
   const displayAmount = (paise: number) => {
-    if (!isSensitiveDataVisible) return '••••••';
     return formatCurrency(paise, currency);
   };
 
@@ -148,22 +147,6 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.greetingText}>{greeting}</Text>
             <Text style={styles.subGreetingText}>Never Settle • Financial Tracker</Text>
-          </View>
-          <View style={styles.headerActions}>
-            <Pressable
-              style={styles.iconButton}
-              onPress={() => {
-                triggerHaptic.light();
-                toggleSensitiveData();
-              }}
-              hitSlop={8}
-            >
-              <Icon
-                name={isSensitiveDataVisible ? 'Eye' : 'EyeOff'}
-                size={20}
-                color={THEME.colors.textSecondary}
-              />
-            </Pressable>
           </View>
         </View>
 
@@ -224,7 +207,7 @@ export default function DashboardScreen() {
             {displayAmount(netBalance)}
           </Text>
 
-          {/* Cashflow Breakdown Row */}
+          {/* Cashflow & Wealth Breakdown Row */}
           <View style={styles.cashFlowRow}>
             {/* Income Card */}
             <Pressable
@@ -232,11 +215,11 @@ export default function DashboardScreen() {
               onPress={() => triggerHaptic.light()}
             >
               <View style={styles.cashFlowIconWrap}>
-                <Icon name="ArrowDownLeft" size={16} color={THEME.colors.income} />
+                <Icon name="ArrowDownLeft" size={14} color={THEME.colors.income} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.cashFlowLabel}>Income</Text>
-                <Text style={styles.incomeAmount}>{displayAmount(totalIncome)}</Text>
+                <Text style={styles.incomeAmount} numberOfLines={1}>{displayAmount(totalIncome)}</Text>
               </View>
             </Pressable>
 
@@ -246,11 +229,25 @@ export default function DashboardScreen() {
               onPress={() => triggerHaptic.light()}
             >
               <View style={styles.cashFlowIconWrap}>
-                <Icon name="ArrowUpRight" size={16} color={THEME.colors.expense} />
+                <Icon name="ArrowUpRight" size={14} color={THEME.colors.expense} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.cashFlowLabel}>Expenses</Text>
-                <Text style={styles.expenseAmount}>{displayAmount(totalExpense)}</Text>
+                <Text style={styles.expenseAmount} numberOfLines={1}>{displayAmount(totalExpense)}</Text>
+              </View>
+            </Pressable>
+
+            {/* Investment Card */}
+            <Pressable
+              style={[styles.cashFlowBox, styles.investmentBox]}
+              onPress={() => triggerHaptic.light()}
+            >
+              <View style={styles.cashFlowIconWrap}>
+                <Icon name="TrendingUp" size={14} color={THEME.colors.investment} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cashFlowLabel}>Invested</Text>
+                <Text style={styles.investmentAmount} numberOfLines={1}>{displayAmount(totalInvestment)}</Text>
               </View>
             </Pressable>
           </View>
@@ -266,9 +263,22 @@ export default function DashboardScreen() {
             }}
           >
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.expenseBg }]}>
-              <Icon name="Minus" size={18} color={THEME.colors.expense} />
+              <Icon name="Minus" size={16} color={THEME.colors.expense} />
             </View>
-            <Text style={styles.actionLabel}>Add Expense</Text>
+            <Text style={styles.actionLabel}>Expense</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionButton, styles.actionButtonInvestment]}
+            onPress={() => {
+              triggerHaptic.medium();
+              router.push('/modal/add-transaction');
+            }}
+          >
+            <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.investmentBg }]}>
+              <Icon name="TrendingUp" size={16} color={THEME.colors.investment} />
+            </View>
+            <Text style={styles.actionLabel}>Invest</Text>
           </Pressable>
 
           <Pressable
@@ -279,9 +289,9 @@ export default function DashboardScreen() {
             }}
           >
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.incomeBg }]}>
-              <Icon name="Plus" size={18} color={THEME.colors.income} />
+              <Icon name="Plus" size={16} color={THEME.colors.income} />
             </View>
-            <Text style={styles.actionLabel}>Add Income</Text>
+            <Text style={styles.actionLabel}>Income</Text>
           </Pressable>
 
           <Pressable
@@ -292,7 +302,7 @@ export default function DashboardScreen() {
             }}
           >
             <View style={[styles.actionIconBadge, { backgroundColor: THEME.colors.primaryGlow }]}>
-              <Icon name="PieChart" size={18} color={THEME.colors.primary} />
+              <Icon name="PieChart" size={16} color={THEME.colors.primary} />
             </View>
             <Text style={styles.actionLabel}>Analytics</Text>
           </Pressable>
@@ -624,6 +634,9 @@ const styles = StyleSheet.create({
   expenseBox: {
     borderColor: THEME.colors.expenseBorder,
   },
+  investmentBox: {
+    borderColor: THEME.colors.investmentBorder,
+  },
   cashFlowIconWrap: {
     width: 32,
     height: 32,
@@ -652,6 +665,13 @@ const styles = StyleSheet.create({
     marginTop: 1,
     fontFamily: THEME.typography.fontFamily,
   },
+  investmentAmount: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: THEME.colors.investment,
+    marginTop: 1,
+    fontFamily: THEME.typography.fontFamily,
+  },
   quickActionsContainer: {
     flexDirection: 'row',
     gap: 10,
@@ -670,6 +690,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionButtonExpense: {},
+  actionButtonInvestment: {},
   actionButtonIncome: {},
   actionIconBadge: {
     width: 36,

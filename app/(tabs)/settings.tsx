@@ -18,7 +18,6 @@ import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
 import { useGoalStore } from '../../src/store/useGoalStore';
-import { usePrivacyStore } from '../../src/store/usePrivacyStore';
 import { UpdateService } from '../../src/services/updateService';
 import { NotificationService } from '../../src/services/notificationService';
 import { CurrencyCode } from '../../src/types';
@@ -48,9 +47,6 @@ export default function SettingsScreen() {
   const budgets = useBudgetStore((state) => state.budgets);
   const clearAllBudgets = useBudgetStore((state) => state.clearAllBudgets);
   const clearAllGoals = useGoalStore((state) => state.clearAllGoals);
-
-  const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
-  const toggleSensitiveData = usePrivacyStore((state) => state.toggleSensitiveData);
 
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
@@ -143,11 +139,21 @@ export default function SettingsScreen() {
 
         Alert.alert(
           'Update Available!',
-          'A new update is available. Downloading and applying it now...',
+          'A new version is available. Would you like to download and restart now?',
           [
             {
-              text: 'Apply & Restart',
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setIsDownloadingUpdate(false);
+                setUpdateSubtitle('Update available (pending install)');
+              },
+            },
+            {
+              text: 'Download & Restart',
               onPress: async () => {
+                setIsDownloadingUpdate(true);
+                setUpdateSubtitle('Applying update bundle...');
                 const downloadResult = await UpdateService.fetchAndApplyUpdate();
                 if (!downloadResult.success) {
                   setIsDownloadingUpdate(false);
@@ -158,13 +164,6 @@ export default function SettingsScreen() {
             },
           ]
         );
-
-        const downloadResult = await UpdateService.fetchAndApplyUpdate();
-        if (!downloadResult.success) {
-          setIsDownloadingUpdate(false);
-          setUpdateSubtitle('Failed to install update');
-          Alert.alert('Update Error', downloadResult.error || 'Could not apply update.');
-        }
       } else {
         setIsCheckingUpdate(false);
         setUpdateSubtitle('App is up to date (Latest bundle)');
@@ -328,30 +327,6 @@ export default function SettingsScreen() {
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
             </Pressable>
-
-            <View style={styles.divider} />
-
-            {/* Privacy Mode */}
-            <View style={styles.rowItem}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 159, 10, 0.15)' }]}>
-                  <Icon name="EyeOff" size={18} color={THEME.colors.warning} />
-                </View>
-                <View>
-                  <Text style={styles.rowTitle}>Privacy Mode</Text>
-                  <Text style={styles.rowSubtitle}>Hide sensitive balances on screen</Text>
-                </View>
-              </View>
-              <Switch
-                value={!isSensitiveDataVisible}
-                onValueChange={() => {
-                  triggerHaptic.selection();
-                  toggleSensitiveData();
-                }}
-                trackColor={{ false: THEME.colors.surfaceSubtle, true: THEME.colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
           </View>
         </View>
 

@@ -14,7 +14,6 @@ import { useRouter } from 'expo-router';
 import { useTransactionStore } from '../../src/store/useTransactionStore';
 import { useBudgetStore } from '../../src/store/useBudgetStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
-import { usePrivacyStore } from '../../src/store/usePrivacyStore';
 import { Transaction, TransactionType } from '../../src/types';
 import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
@@ -28,10 +27,9 @@ export default function TransactionsScreen() {
   const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
   const categories = useBudgetStore((state) => state.categories);
   const currency = useSettingsStore((state) => state.settings.currency);
-  const isSensitiveDataVisible = usePrivacyStore((state) => state.isSensitiveDataVisible);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income' | 'investment'>('all');
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
 
   // Transaction detail / action sheet state
@@ -99,6 +97,8 @@ export default function TransactionsScreen() {
     for (const tx of filteredTransactions) {
       if (tx.type === 'expense') {
         sum -= tx.amount;
+      } else if (tx.type === 'investment') {
+        sum += tx.amount;
       } else {
         sum += tx.amount;
       }
@@ -107,7 +107,6 @@ export default function TransactionsScreen() {
   }, [filteredTransactions]);
 
   const displayAmount = (paise: number) => {
-    if (!isSensitiveDataVisible) return '••••••';
     return formatCurrency(paise, currency);
   };
 
@@ -165,7 +164,7 @@ export default function TransactionsScreen() {
           )}
         </View>
 
-        {/* Type Filter Pills (All / Expenses / Income) */}
+        {/* Type Filter Pills (All / Expenses / Investments / Income) */}
         <View style={styles.typeFilterRow}>
           <Pressable
             style={[styles.typePill, typeFilter === 'all' && styles.typePillActive]}
@@ -193,6 +192,23 @@ export default function TransactionsScreen() {
               ]}
             >
               Expenses
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.typePill, typeFilter === 'investment' && styles.typePillActiveInvestment]}
+            onPress={() => {
+              triggerHaptic.selection();
+              setTypeFilter('investment');
+            }}
+          >
+            <Text
+              style={[
+                styles.typePillText,
+                typeFilter === 'investment' && styles.typePillTextActiveInvestment,
+              ]}
+            >
+              Investments
             </Text>
           </Pressable>
 
@@ -611,6 +627,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.expenseBorder,
   },
+  typePillActiveInvestment: {
+    backgroundColor: THEME.colors.investmentBg,
+    borderWidth: 1,
+    borderColor: THEME.colors.investmentBorder,
+  },
   typePillActiveIncome: {
     backgroundColor: THEME.colors.incomeBg,
     borderWidth: 1,
@@ -628,6 +649,10 @@ const styles = StyleSheet.create({
   },
   typePillTextActiveExpense: {
     color: THEME.colors.expense,
+    fontWeight: '800',
+  },
+  typePillTextActiveInvestment: {
+    color: THEME.colors.investment,
     fontWeight: '800',
   },
   typePillTextActiveIncome: {

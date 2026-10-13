@@ -18,46 +18,18 @@ interface PrivacyState {
 }
 
 export const usePrivacyStore = create<PrivacyState>((set, get) => ({
-  isSensitiveDataVisible: false, // Protected by default
+  isSensitiveDataVisible: true, // Always visible (privacy mode disabled)
   isLocked: false,
   isAuthenticating: false,
 
   toggleLock: () => {
-    const nextLocked = !get().isLocked;
-    set({ isLocked: nextLocked, isSensitiveDataVisible: !nextLocked });
+    // Privacy mode turned off
+    set({ isLocked: false, isSensitiveDataVisible: true });
   },
 
-  toggleSensitiveData: async (reason) => {
-    const isCurrentlyVisible = get().isSensitiveDataVisible;
-
-    if (isCurrentlyVisible) {
-      // Concealing details does not require biometrics
-      triggerHaptic.light();
-      set({ isSensitiveDataVisible: false });
-      return true;
-    }
-
-    // Viewing details requires fingerprint / biometric authentication!
-    set({ isAuthenticating: true });
-    try {
-      const passed = await PrivacyService.authenticate(
-        reason || 'Scan fingerprint to view sensitive financial details'
-      );
-
-      if (passed) {
-        set({ isSensitiveDataVisible: true, isAuthenticating: false, isLocked: false });
-        triggerHaptic.success();
-        return true;
-      } else {
-        triggerHaptic.error();
-      }
-    } catch (e) {
-      console.error('[usePrivacyStore] Authentication error:', e);
-      triggerHaptic.error();
-    }
-
-    set({ isAuthenticating: false });
-    return false;
+  toggleSensitiveData: async () => {
+    set({ isSensitiveDataVisible: true, isLocked: false, isAuthenticating: false });
+    return true;
   },
 
   revealSensitiveData: () => {
@@ -65,30 +37,18 @@ export const usePrivacyStore = create<PrivacyState>((set, get) => ({
   },
 
   hideSensitiveData: () => {
-    set({ isSensitiveDataVisible: false });
+    // Privacy mode disabled - remain visible
+    set({ isSensitiveDataVisible: true });
   },
 
-  authenticateAndReveal: async (reason) => {
-    set({ isAuthenticating: true });
-    try {
-      const success = await PrivacyService.authenticate(reason);
-      if (success) {
-        set({ isSensitiveDataVisible: true, isLocked: false, isAuthenticating: false });
-        triggerHaptic.success();
-        return true;
-      } else {
-        triggerHaptic.error();
-      }
-    } catch (e) {
-      console.error('[usePrivacyStore] Auth error:', e);
-      triggerHaptic.error();
-    }
-    set({ isAuthenticating: false });
-    return false;
+  authenticateAndReveal: async () => {
+    set({ isSensitiveDataVisible: true, isLocked: false, isAuthenticating: false });
+    return true;
   },
 
   lockApp: () => {
-    set({ isLocked: true, isSensitiveDataVisible: false });
+    // Privacy mode disabled - do not lock
+    set({ isLocked: false, isSensitiveDataVisible: true });
   },
 
   unlockApp: () => {

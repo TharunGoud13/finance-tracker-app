@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useBudgetStore } from '../../store/useBudgetStore';
-import { usePrivacyStore } from '../../store/usePrivacyStore';
 import { HapticPressable } from '../ui/HapticPressable';
 import { Icon } from '../ui/Icon';
 import { getGreeting, formatMonthYear } from '../../utils/formatters';
@@ -18,8 +17,6 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
   const router = useRouter();
   const userName = useSettingsStore((state) => state.settings.userName);
   const selectedMonth = useBudgetStore((state) => state.selectedMonth);
-  const isLocked = usePrivacyStore((state) => state.isLocked);
-  const toggleLock = usePrivacyStore((state) => state.toggleLock);
 
   const greetingInfo = getGreeting();
 
@@ -41,22 +38,6 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
             style={styles.addBtn}
           >
             <Icon name="Plus" size={20} color="#ffffff" />
-          </HapticPressable>
-
-          {/* Privacy Eye Toggle */}
-          <HapticPressable
-            onPress={toggleLock}
-            hapticType="medium"
-            style={[
-              styles.iconBtn,
-              isLocked && styles.iconBtnActive,
-            ]}
-          >
-            <Icon
-              name={isLocked ? 'EyeOff' : 'Eye'}
-              size={18}
-              color={isLocked ? '#eb0028' : '#ffffff'}
-            />
           </HapticPressable>
         </View>
       </View>

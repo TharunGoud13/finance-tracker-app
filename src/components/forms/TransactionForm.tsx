@@ -127,7 +127,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Type Switcher (Expense / Income) */}
+        {/* Type Switcher (Expense / Income / Investment) */}
         <View style={styles.segmentedControl}>
           <Pressable
             style={[
@@ -138,7 +138,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           >
             <Icon
               name="ArrowUpRight"
-              size={18}
+              size={16}
               color={type === 'expense' ? '#FFFFFF' : THEME.colors.textMuted}
               strokeWidth={2.5}
             />
@@ -155,13 +155,36 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <Pressable
             style={[
               styles.segmentItem,
+              type === 'investment' && styles.segmentActiveInvestment,
+            ]}
+            onPress={() => handleTypeChange('investment')}
+          >
+            <Icon
+              name="TrendingUp"
+              size={16}
+              color={type === 'investment' ? '#FFFFFF' : THEME.colors.textMuted}
+              strokeWidth={2.5}
+            />
+            <Text
+              style={[
+                styles.segmentText,
+                type === 'investment' && styles.segmentTextActive,
+              ]}
+            >
+              Investment
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.segmentItem,
               type === 'income' && styles.segmentActiveIncome,
             ]}
             onPress={() => handleTypeChange('income')}
           >
             <Icon
               name="ArrowDownLeft"
-              size={18}
+              size={16}
               color={type === 'income' ? '#FFFFFF' : THEME.colors.textMuted}
               strokeWidth={2.5}
             />
@@ -183,7 +206,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <Text
               style={[
                 styles.currencyPrefix,
-                type === 'expense' ? styles.expenseColor : styles.incomeColor,
+                type === 'expense'
+                  ? styles.expenseColor
+                  : type === 'investment'
+                  ? styles.investmentColor
+                  : styles.incomeColor,
               ]}
             >
               {currencySymbol}
@@ -191,7 +218,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <TextInput
               style={[
                 styles.amountTextInput,
-                type === 'expense' ? styles.expenseColor : styles.incomeColor,
+                type === 'expense'
+                  ? styles.expenseColor
+                  : type === 'investment'
+                  ? styles.investmentColor
+                  : styles.incomeColor,
               ]}
               placeholder="0"
               placeholderTextColor={THEME.colors.textDisabled}
@@ -398,6 +429,9 @@ const styles = StyleSheet.create({
   segmentActiveExpense: {
     backgroundColor: THEME.colors.expense,
   },
+  segmentActiveInvestment: {
+    backgroundColor: THEME.colors.investment,
+  },
   segmentActiveIncome: {
     backgroundColor: THEME.colors.income,
   },
@@ -451,6 +485,9 @@ const styles = StyleSheet.create({
   },
   expenseColor: {
     color: THEME.colors.expense,
+  },
+  investmentColor: {
+    color: THEME.colors.investment,
   },
   incomeColor: {
     color: THEME.colors.income,

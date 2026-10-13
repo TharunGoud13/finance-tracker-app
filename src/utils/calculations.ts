@@ -66,6 +66,18 @@ export function calculateTotalExpense(
 }
 
 /**
+ * Calculate total investment in paise for all transactions or a specific month
+ */
+export function calculateTotalInvestment(
+  transactions: Transaction[],
+  month?: string
+): number {
+  return transactions
+    .filter((tx) => tx.type === 'investment' && (!month || isSameMonth(tx.date, month)))
+    .reduce((sum, tx) => sum + Math.round(tx.amount), 0);
+}
+
+/**
  * Calculate remaining balance (Income - Expense) in paise
  */
 export function calculateRemainingBalance(
@@ -190,7 +202,8 @@ export function calculateMonthlySummary(
 ): MonthlyFinancialSummary {
   const currentIncomePaise = calculateTotalIncome(transactions, month);
   const currentExpensePaise = calculateTotalExpense(transactions, month);
-  const remainingBalancePaise = currentIncomePaise - currentExpensePaise;
+  const currentInvestmentPaise = calculateTotalInvestment(transactions, month);
+  const remainingBalancePaise = currentIncomePaise - currentExpensePaise - currentInvestmentPaise;
   const savingsRate = calculateSavingsRate(currentIncomePaise, currentExpensePaise);
 
   const monthBudgets = budgets.filter((b) => b.month === month);
@@ -252,6 +265,7 @@ export function calculateMonthlySummary(
     month,
     totalIncomePaise: currentIncomePaise,
     totalExpensePaise: currentExpensePaise,
+    totalInvestmentPaise: currentInvestmentPaise,
     remainingBalancePaise,
     savingsRate,
     totalAllocatedBudgetPaise,

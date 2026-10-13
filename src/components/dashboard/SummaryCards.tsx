@@ -106,6 +106,21 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
             </View>
           )}
         </Card>
+
+        {/* Investment Card */}
+        <Card style={styles.subCard}>
+          <View style={styles.subHeader}>
+            <View style={[styles.iconCircle, { backgroundColor: 'rgba(10, 132, 255, 0.15)' }]}>
+              <Icon name="TrendingUp" size={16} color="#0a84ff" />
+            </View>
+            <Text style={styles.subLabel}>Invested</Text>
+          </View>
+
+          <SensitiveAmount
+            amountPaise={summary.totalInvestmentPaise || 0}
+            style={[styles.subAmount, { color: '#0a84ff' }]}
+          />
+        </Card>
       </View>
     </View>
   );

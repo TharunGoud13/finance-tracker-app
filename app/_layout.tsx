@@ -19,9 +19,6 @@ export default function RootLayout() {
   const loadRecurring = useRecurringStore((state) => state.loadRecurring);
   const loadSettings = useSettingsStore((state) => state.loadSettings);
 
-  // Initialize privacy auto-lock listener
-  useAppLock();
-
   useEffect(() => {
     // Parallel initial load
     Promise.all([

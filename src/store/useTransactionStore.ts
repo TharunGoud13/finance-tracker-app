@@ -4,7 +4,7 @@ import { StorageService, STORAGE_KEYS } from '../services/storageService';
 
 interface TransactionFilterState {
   searchQuery: string;
-  typeFilter: 'all' | 'income' | 'expense';
+  typeFilter: 'all' | 'income' | 'expense' | 'investment';
   categoryFilter: string | null;
   sortBy: 'newest' | 'oldest' | 'highest' | 'lowest';
 }
@@ -43,7 +43,15 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   loadTransactions: async () => {
     set({ isLoading: true });
     try {
-      const data = await StorageService.getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
+      let data = await StorageService.getItem<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
+      if (data && data.length > 0) {
+        data = data.map((tx) => {
+          if (tx.categoryId === 'exp-investment' || (tx.categoryId && tx.categoryId.startsWith('inv-'))) {
+            return { ...tx, type: 'investment' as const };
+          }
+          return tx;
+        });
+      }
       set({ transactions: data || [], isLoading: false });
     } catch (e) {
       console.error('[useTransactionStore] Error loading:', e);

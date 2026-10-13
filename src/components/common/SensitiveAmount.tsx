@@ -32,10 +32,5 @@ export const SensitiveAmount: React.FC<SensitiveAmountProps> = ({
   const activeCurrency = (currencyCode || defaultCurrency) as any;
   const formattedActual = formatCurrency(amountPaise, activeCurrency, { compact });
 
-  if (isLocked) {
-    const masked = PrivacyService.maskAmount(formattedActual, maskChar);
-    return <Text style={style}>{prefix}{masked}</Text>;
-  }
-
   return <Text style={style}>{prefix}{formattedActual}</Text>;
 };

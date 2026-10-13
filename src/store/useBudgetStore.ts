@@ -41,13 +41,21 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
         STORAGE_KEYS.CATEGORIES,
         ALL_DEFAULT_CATEGORIES
       );
+      // Migrate any legacy exp-investment to type 'investment'
+      storedCategories = storedCategories.map((c) => {
+        if (c.id === 'exp-investment') {
+          return { ...c, type: 'investment' as const, color: '#0a84ff', name: 'Mutual Funds & SIP' };
+        }
+        return c;
+      });
+
       // Ensure any new default categories are merged
       const existingIds = new Set(storedCategories.map((c) => c.id));
       const missingDefaults = ALL_DEFAULT_CATEGORIES.filter((c) => !existingIds.has(c.id));
       if (missingDefaults.length > 0) {
         storedCategories = [...storedCategories, ...missingDefaults];
-        await StorageService.setItem(STORAGE_KEYS.CATEGORIES, storedCategories);
       }
+      await StorageService.setItem(STORAGE_KEYS.CATEGORIES, storedCategories);
 
       const storedBudgets = await StorageService.getItem<Budget[]>(
         STORAGE_KEYS.BUDGETS,

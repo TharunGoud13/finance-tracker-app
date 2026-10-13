@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'investment';
 
 export interface Transaction {
   id: string;
@@ -112,6 +112,7 @@ export interface MonthlyFinancialSummary {
   month: string; // "YYYY-MM"
   totalIncomePaise: number;
   totalExpensePaise: number;
+  totalInvestmentPaise?: number;
   remainingBalancePaise: number;
   savingsRate: number; // 0 - 100%
   totalAllocatedBudgetPaise: number;

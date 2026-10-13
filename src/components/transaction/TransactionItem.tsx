@@ -22,8 +22,9 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   showDivider = false,
 }) => {
   const isIncome = transaction.type === 'income';
-  const catColor = category?.color || (isIncome ? '#30d158' : '#eb0028');
-  const catIcon = category?.icon || (isIncome ? 'ArrowDownLeft' : 'ShoppingBag');
+  const isInvestment = transaction.type === 'investment';
+  const catColor = category?.color || (isIncome ? '#30d158' : isInvestment ? '#0a84ff' : '#eb0028');
+  const catIcon = category?.icon || (isIncome ? 'ArrowDownLeft' : isInvestment ? 'TrendingUp' : 'ShoppingBag');
 
   return (
     <HapticPressable
@@ -49,7 +50,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         </Text>
         <View style={styles.subtitleRow}>
           <Text style={styles.categoryName} numberOfLines={1}>
-            {category?.name || (isIncome ? 'Income' : 'Expense')}
+            {category?.name || (isIncome ? 'Income' : isInvestment ? 'Investment' : 'Expense')}
           </Text>
           <Text style={styles.dotSeparator}>•</Text>
           <Text style={styles.dateText}>
@@ -70,9 +71,9 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           amountPaise={transaction.amount}
           style={[
             styles.amountText,
-            { color: isIncome ? '#30d158' : '#ffffff' },
+            { color: isIncome ? '#30d158' : isInvestment ? '#0a84ff' : '#ffffff' },
           ]}
-          prefix={isIncome ? '+' : '-'}
+          prefix={isIncome ? '+' : isInvestment ? '↗ ' : '-'}
         />
       </View>
     </HapticPressable>

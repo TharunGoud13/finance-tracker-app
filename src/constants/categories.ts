@@ -92,15 +92,6 @@ export const DEFAULT_EXPENSE_CATEGORIES: Category[] = [
     createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
-    id: 'exp-investment',
-    name: 'Investment & SIP',
-    icon: 'TrendingUp',
-    color: '#22c55e', // Green
-    type: 'expense',
-    isDefault: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
     id: 'exp-other',
     name: 'Other Expenses',
     icon: 'MoreHorizontal',
@@ -168,9 +159,76 @@ export const DEFAULT_INCOME_CATEGORIES: Category[] = [
   },
 ];
 
+export const DEFAULT_INVESTMENT_CATEGORIES: Category[] = [
+  {
+    id: 'inv-mutual-funds',
+    name: 'Mutual Funds & SIP',
+    icon: 'TrendingUp',
+    color: '#0a84ff', // Electric Blue
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-stocks',
+    name: 'Stocks & Equities',
+    icon: 'TrendingUp',
+    color: '#30d158', // Green
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-gold',
+    name: 'Gold & Commodities',
+    icon: 'Award',
+    color: '#f59e0b', // Gold Amber
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-crypto',
+    name: 'Crypto & Digital Assets',
+    icon: 'Zap',
+    color: '#8b5cf6', // Violet
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-fd-ppf',
+    name: 'FD, PPF & Bonds',
+    icon: 'Shield',
+    color: '#06b6d4', // Cyan
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-real-estate',
+    name: 'Real Estate & Land',
+    icon: 'Home',
+    color: '#ec4899', // Pink
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'inv-other',
+    name: 'Other Investments',
+    icon: 'MoreHorizontal',
+    color: '#64748b', // Slate
+    type: 'investment',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
 export const ALL_DEFAULT_CATEGORIES: Category[] = [
   ...DEFAULT_INCOME_CATEGORIES,
   ...DEFAULT_EXPENSE_CATEGORIES,
+  ...DEFAULT_INVESTMENT_CATEGORIES,
 ];
 
 export const CATEGORY_COLOR_PALETTE = [

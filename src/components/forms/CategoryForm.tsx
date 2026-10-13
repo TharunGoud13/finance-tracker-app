@@ -50,11 +50,12 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     >
       <SegmentedControl
         options={[
-          { value: 'expense', label: 'Expense Category', activeColor: '#f43f5e' },
-          { value: 'income', label: 'Income Category', activeColor: '#10b981' },
+          { value: 'expense', label: 'Expense', activeColor: '#eb0028' },
+          { value: 'investment', label: 'Investment', activeColor: '#0a84ff' },
+          { value: 'income', label: 'Income', activeColor: '#30d158' },
         ]}
         selectedValue={type}
-        onSelect={(val) => setType(val)}
+        onSelect={(val) => setType(val as any)}
         style={{ marginBottom: 20 }}
       />
 
