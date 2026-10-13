@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
 import { useTransactionStore } from '../src/store/useTransactionStore';
 import { useBudgetStore } from '../src/store/useBudgetStore';
@@ -42,29 +41,6 @@ export default function RootLayout() {
 
     // Initialize notification service
     NotificationService.initialize().catch(() => {});
-
-    // Listen for notification interaction (when user taps reminder)
-    let subscription: Notifications.EventSubscription | null = null;
-    try {
-      if (Notifications.addNotificationResponseReceivedListener) {
-        subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-          const data = response?.notification?.request?.content?.data;
-          if (data?.screen) {
-            router.push('/modal/add-transaction');
-          } else {
-            router.push('/modal/add-transaction');
-          }
-        });
-      }
-    } catch {
-      // Graceful fallback for non-native / unsupported runtime
-    }
-
-    return () => {
-      if (subscription && subscription.remove) {
-        subscription.remove();
-      }
-    };
   }, [
     loadSettings,
     loadTransactions,
