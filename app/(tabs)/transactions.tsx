@@ -19,6 +19,7 @@ import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
 import { formatCurrency, formatDate } from '../../src/utils/formatters';
 import { triggerHaptic } from '../../src/utils/haptics';
+import { ExportPdfModal } from '../../src/components/export/ExportPdfModal';
 
 export default function TransactionsScreen() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function TransactionsScreen() {
   // Transaction detail / action sheet state
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
+  const [isExportPdfModalVisible, setIsExportPdfModalVisible] = useState(false);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -129,16 +131,28 @@ export default function TransactionsScreen() {
             <Text style={styles.headerTitle}>Activity</Text>
             <Text style={styles.headerSubtitle}>History & Transactions</Text>
           </View>
-          <Pressable
-            style={styles.addButton}
-            onPress={() => {
-              triggerHaptic.medium();
-              router.push('/modal/add-transaction');
-            }}
-          >
-            <Icon name="Plus" size={18} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.addButtonText}>Add</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.exportButton}
+              onPress={() => {
+                triggerHaptic.light();
+                setIsExportPdfModalVisible(true);
+              }}
+            >
+              <Icon name="FileText" size={15} color={THEME.colors.textPrimary} />
+              <Text style={styles.exportButtonText}>PDF</Text>
+            </Pressable>
+            <Pressable
+              style={styles.addButton}
+              onPress={() => {
+                triggerHaptic.medium();
+                router.push('/modal/add-transaction');
+              }}
+            >
+              <Icon name="Plus" size={18} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.addButtonText}>Add</Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -576,6 +590,12 @@ export default function TransactionsScreen() {
             </View>
           </Modal>
         )}
+
+        {/* Monthly PDF Export Modal */}
+        <ExportPdfModal
+          visible={isExportPdfModalVisible}
+          onClose={() => setIsExportPdfModalVisible(false)}
+        />
       </View>
     </SafeAreaView>
   );
@@ -609,6 +629,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textMuted,
     marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    gap: 5,
+  },
+  exportButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
     fontFamily: THEME.typography.fontFamily,
   },
   addButton: {

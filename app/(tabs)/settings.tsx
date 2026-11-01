@@ -24,6 +24,7 @@ import { CurrencyCode } from '../../src/types';
 import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
 import { triggerHaptic } from '../../src/utils/haptics';
+import { ExportPdfModal } from '../../src/components/export/ExportPdfModal';
 
 const CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
   { code: 'INR', label: 'Indian Rupee', symbol: '₹' },
@@ -52,6 +53,7 @@ export default function SettingsScreen() {
   const [isNameModalVisible, setIsNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState(settings.userName || 'Tharun');
 
+  const [isExportPdfModalVisible, setIsExportPdfModalVisible] = useState(false);
   const [isClearModalVisible, setIsClearModalVisible] = useState(false);
   const [statusBanner, setStatusBanner] = useState('');
   const [isTestingNotification, setIsTestingNotification] = useState(false);
@@ -470,15 +472,39 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>DATA MANAGEMENT</Text>
           <View style={styles.card}>
-            {/* Export Data */}
+            {/* Export Monthly Statement (PDF) */}
+            <Pressable
+              style={styles.rowItem}
+              onPress={() => {
+                triggerHaptic.light();
+                setIsExportPdfModalVisible(true);
+              }}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.itemIcon, { backgroundColor: 'rgba(235, 0, 41, 0.12)' }]}>
+                  <Icon name="FileText" size={18} color="#EB0029" />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>Export Monthly Statement (PDF)</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>
+                    Month-wise report (1st to end) with required data
+                  </Text>
+                </View>
+              </View>
+              <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            {/* Export Data (JSON) */}
             <Pressable style={styles.rowItem} onPress={handleExportData}>
               <View style={styles.rowLeft}>
                 <View style={[styles.itemIcon, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}>
                   <Icon name="Share2" size={18} color={THEME.colors.textPrimary} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-                  <Text style={styles.rowTitle} numberOfLines={1}>Backup & Export</Text>
-                  <Text style={styles.rowSubtitle} numberOfLines={1}>Export JSON to files or clipboard</Text>
+                  <Text style={styles.rowTitle} numberOfLines={1}>Backup Data (JSON)</Text>
+                  <Text style={styles.rowSubtitle} numberOfLines={1}>Export raw JSON to files or clipboard</Text>
                 </View>
               </View>
               <Icon name="ChevronRight" size={18} color={THEME.colors.textMuted} />
@@ -743,6 +769,12 @@ export default function SettingsScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Monthly PDF Export Modal */}
+        <ExportPdfModal
+          visible={isExportPdfModalVisible}
+          onClose={() => setIsExportPdfModalVisible(false)}
+        />
       </ScrollView>
     </SafeAreaView>
   );

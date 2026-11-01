@@ -19,6 +19,7 @@ import { THEME } from '../../src/constants/theme';
 import { Icon } from '../../src/components/ui/Icon';
 import { formatCurrency, formatMonthYear, parseInputToPaise, formatDate } from '../../src/utils/formatters';
 import { triggerHaptic } from '../../src/utils/haptics';
+import { ExportPdfModal } from '../../src/components/export/ExportPdfModal';
 
 type AnalyticsTabType = 'expenses' | 'investment' | 'income';
 
@@ -38,6 +39,7 @@ export default function BudgetAnalyticsScreen() {
 
   // Month selector modal
   const [isMonthModalVisible, setIsMonthModalVisible] = useState(false);
+  const [isExportPdfModalVisible, setIsExportPdfModalVisible] = useState(false);
 
   // Budget edit modal
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -244,17 +246,29 @@ export default function BudgetAnalyticsScreen() {
             <Text style={styles.headerTitle}>Analytics</Text>
             <Text style={styles.headerSubtitle}>Cashflow, Living Costs & Investments</Text>
           </View>
-          <Pressable
-            style={styles.monthBadge}
-            onPress={() => {
-              triggerHaptic.selection();
-              setIsMonthModalVisible(true);
-            }}
-          >
-            <Icon name="Calendar" size={14} color={THEME.colors.primary} />
-            <Text style={styles.monthBadgeText}>{formatMonthYear(selectedMonth)}</Text>
-            <Icon name="ChevronDown" size={14} color={THEME.colors.textMuted} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.exportPdfButton}
+              onPress={() => {
+                triggerHaptic.light();
+                setIsExportPdfModalVisible(true);
+              }}
+            >
+              <Icon name="FileText" size={15} color={THEME.colors.textPrimary} />
+              <Text style={styles.exportPdfButtonText}>PDF</Text>
+            </Pressable>
+            <Pressable
+              style={styles.monthBadge}
+              onPress={() => {
+                triggerHaptic.selection();
+                setIsMonthModalVisible(true);
+              }}
+            >
+              <Icon name="Calendar" size={14} color={THEME.colors.primary} />
+              <Text style={styles.monthBadgeText}>{formatMonthYear(selectedMonth)}</Text>
+              <Icon name="ChevronDown" size={14} color={THEME.colors.textMuted} />
+            </Pressable>
+          </View>
         </View>
 
         {/* 1. Monthly Executive Cashflow & Wealth Overview */}
@@ -1004,6 +1018,13 @@ export default function BudgetAnalyticsScreen() {
             </View>
           </Modal>
         )}
+
+        {/* Monthly PDF Export Modal */}
+        <ExportPdfModal
+          visible={isExportPdfModalVisible}
+          onClose={() => setIsExportPdfModalVisible(false)}
+          initialMonth={selectedMonth}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -1040,6 +1061,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: THEME.colors.textMuted,
     marginTop: 2,
+    fontFamily: THEME.typography.fontFamily,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exportPdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: THEME.borderRadius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    gap: 5,
+  },
+  exportPdfButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
     fontFamily: THEME.typography.fontFamily,
   },
   monthBadge: {
